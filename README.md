@@ -3,4 +3,5 @@ PHPix is a touch enabled Photo and Youtube gallery system which can also be used
 
 <a download href="https://raw.githubusercontent.com/phploaded/PHPix/master/phpix-install.php">phpix-install.php</a>
 
-Upload that PHP file to your server, where you want to install PHPix then access it from browser to start installing. Example http://your-website-path.com/phpix-install.php
+Upload that PHP file to your server, where you want to install PHPix then access it from browser to start installing. 
+Example http://your-website-path.com/phpix-install.php
