@@ -1,0 +1,17 @@
+/* animate tiltin */
+.animate-tiltin #gal-reel-prev-inner{
+transform: scale(0.95,0.95) rotateY(15deg);
+}
+
+.animate-tiltin #gal-reel-next-inner{
+transform: scale(0.95,0.95) rotateY(-15deg);
+}
+
+.animate-tiltin .gal-main-slide-right{
+transform: scale(0.7,0.7) rotateY(-15deg) !important;
+}
+
+.animate-tiltin .gal-main-slide-left{
+transform: scale(0.7,0.7) rotateY(15deg) !important;
+}
+/* end animate tiltin */

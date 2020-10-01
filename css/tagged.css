@@ -1,0 +1,115 @@
+.xtag-ctr{
+position:absolute;
+margin-left:-25px;
+margin-top:-25px;
+}
+
+.xtag-inner{
+position:relative;
+}
+
+.xtag-quit{
+background: red;
+color: #fff;
+font: bold 16px/20px arial;
+width: 20px;
+text-align: center;
+cursor: pointer;
+float:left;
+margin:-6px 5px 5px -6px;
+}
+
+.xtag-pos-left-top .xtag-form, .xtag-pos-left-top .xtag-text{top:0px;right:49px;}
+.xtag-pos-left-bottom .xtag-form, .xtag-pos-left-bottom .xtag-text{bottom:0;right:49px;}
+.xtag-pos-right-top .xtag-form, .xtag-pos-right-top .xtag-text{top:0px;left:49px;}
+.xtag-pos-right-bottom .xtag-form, .xtag-pos-right-bottom .xtag-text{bottom:0;left:49px;}
+
+.xtag-focus{
+border:1px solid #000;
+width:50px;
+height:50px;
+background-color:rgba(255, 255, 255, 0.6);
+background-image:url('svg/plus.svg');
+background-size:60%;
+background-repeat:no-repeat;
+background-position:center center;
+box-sizing:border-box;
+}
+
+#xtag-element{
+position:relative;
+}
+
+.xtag-form{
+background-color:rgba(255, 255, 255, 0.6);
+width: 200px;
+min-height: 80px;
+border: 1px solid #000;
+position: absolute;
+padding:5px;
+}
+
+.xtag-input{
+box-sizing: border-box;
+padding: 5px;
+border: 1px solid gray;
+width: 100%;
+font: 11px tahoma;
+height: 50px;
+resize:none;
+}
+
+.xtag-save, .xtag-close{
+border:1px solid #333;
+padding:3px 5px;
+font:bold 12px arial;
+text-transform:uppercase;
+margin-right:5px;
+margin-top:5px;
+cursor:pointer;
+background-color:#58B000;
+color:#fff;
+}
+
+.xtag-close{
+background-color:#C60005;
+}
+
+.xtag-tag{
+position:absolute;
+margin-left:-25px;
+margin-top:-25px;
+}
+
+.xtag-area{
+width:50px;
+height:50px;
+border:1px dotted #fff;
+outline:1px dotted #000;
+box-sizing:border-box;
+}
+
+.xtag-text{
+background: rgba(255, 255, 255, 0.8);
+padding: 5px;
+font: 11px tahoma;
+width: 100px;
+min-height:50px;
+box-sizing: border-box;
+border: 1px solid #fff;
+position:absolute;
+display:none;
+}
+
+.xtag-tag:hover{
+z-index:1;
+}
+
+.xtag-tag:hover .xtag-area{
+border:1px solid #fff;
+outline:1px solid #000;
+}
+
+.xtag-tag:hover .xtag-text{
+display:block;
+}

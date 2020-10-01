@@ -1,0 +1,41 @@
+.gal-print-frame{
+background-image:url('../images/bg/bbg.jpg');
+background-size:cover;
+-webkit-backface-visibility: hidden;
+backface-visibility: hidden;
+outline: 1px solid transparent;
+}
+
+.gal-print-size-postcard{
+width:1366px;
+height:768px;
+box-sizing:border-box;
+overflow:hidden;
+position:relative;
+}
+
+.gal-print-frame > img{
+max-height:50%;
+max-width:50%;
+border:10px solid #fff;
+box-sizing:border-box;
+box-shadow:0 0 10px #000;
+transform:rotate(350deg);
+position:absolute;
+left:50px;
+top:50px;
+-webkit-backface-visibility: hidden;
+backface-visibility: hidden;
+}
+
+.gal-print-frame h2{
+margin:0;
+padding:0;
+position:absolute;
+bottom:50px;
+left:0;
+right:0;
+text-align:center;
+font:64px Lobster, Arial;
+color:#fff;
+}

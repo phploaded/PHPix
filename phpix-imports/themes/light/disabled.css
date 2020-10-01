@@ -1,0 +1,9 @@
+@import "common.css";
+
+#gal-reel-prev-inner, #gal-reel-next-inner, .gal-main-slide-right, .gal-main-slide-left{
+background-color:rgb(213,198,183) !important;
+}
+
+#gal-reel-now-inner{
+background-color:#F1ECE7;
+}

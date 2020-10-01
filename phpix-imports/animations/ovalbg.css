@@ -1,0 +1,7 @@
+/* animate ovalbg */
+.animate-ovalbg .gal-main-slide-right, .animate-ovalbg .gal-main-slide-left, .animate-ovalbg #gal-reel-next-inner, .animate-ovalbg #gal-reel-prev-inner{
+transform: scale(0.8,0.8);
+border-radius:100%;
+background-color:#999 !important;
+}
+/* end animate ovalbg */

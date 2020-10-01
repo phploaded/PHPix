@@ -1,0 +1,9 @@
+/* animate shiftin */
+.animate-shiftin #gal-reel-prev-inner{
+transform: scale(0.8,0.8) rotateY(22deg);
+}
+
+.animate-shiftin #gal-reel-next-inner{
+transform: scale(0.8,0.8) rotateY(-22deg);
+}
+/* end animate shiftin */

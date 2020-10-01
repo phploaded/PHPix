@@ -1,0 +1,19 @@
+.animate-cubein #gal-reel-now-inner{
+transform: scale(1,1) rotateY(0deg);
+}
+
+.animate-cubein #gal-reel-next-inner{
+transform: scale(0.8,0.8) rotateY(-22deg);
+}
+
+.animate-cubein .gal-main-slide-left{
+transform: scale(0.8,0.8) rotateY(-21deg) !important;
+}
+
+.animate-cubein #gal-reel-prev-inner{
+transform: scale(0.8,0.8) rotateY(22deg);
+}
+
+.animate-cubein .gal-main-slide-right{
+transform: scale(0.8,0.8) rotateY(21deg) !important;
+}

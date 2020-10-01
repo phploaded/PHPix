@@ -1,0 +1,17 @@
+/* light theme */
+.gal-theme-light .gal-crop-bg, .gal-theme-light #gal-reel-prev-inner, .gal-theme-light #gal-reel-next-inner, .gal-theme-light #gal-reel-now-inner{
+background-color:#ccc;
+}
+
+.gal-theme-light .gal-zoomed, .gal-theme-light .fullscreen-bg, .gal-theme-light #gal-reel-prev, .gal-theme-light #gal-reel-now, .gal-theme-light #gal-reel-next{
+background-color:#eee;
+}
+
+.gal-theme-light.gal-buttons-flat-dark .gal-crop-toggles, .gal-theme-light.gal-buttons-flat-dark .gal-mobile-controls, .gal-theme-light.gal-buttons-flat-dark .gal-cart-indicator, .gal-theme-light.gal-buttons-flat-dark ul.gal-share-menu, .gal-theme-light.gal-buttons-flat-dark .gal-toolbar{
+background-color:rgb(240, 240, 240);
+}
+
+.gal-theme-light.gal-buttons-flat-dark .gal-crop-toggles > li, .gal-theme-light.gal-buttons-flat-dark .gal-mobile-controls, .gal-theme-light.gal-buttons-flat-dark .gal-cart-indicator, .gal-theme-light.gal-buttons-flat-dark ul.gal-share-menu > li, .gal-theme-light.gal-buttons-flat-dark .gal-toolbar > li{
+border-color:rgb(127, 127, 127);
+}
+/* end light theme */

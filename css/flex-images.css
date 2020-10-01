@@ -1,0 +1,3 @@
+.flex-images { }
+.flex-images .item { float: left; margin: 4px; border: 5px solid #fff; box-sizing: content-box; overflow: hidden; position: relative; background-color:#fff; }
+.flex-images .item img { display: block; width: auto; height: 100%; }

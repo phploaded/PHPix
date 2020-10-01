@@ -1,0 +1,22 @@
+@import "static.css";
+
+#flscrn-inner{
+
+}
+
+#flscrn-inner:before{
+animation: parallax_fg linear 75s infinite both;
+}
+
+#flscrn-inner:after{
+animation: parallax_fg linear 30s infinite both;
+}
+
+@keyframes parallax_fg {
+  0% {
+    background-position: 2765px 100%;
+  }
+  100% {
+    background-position: 550px 100%;
+  }
+}

@@ -1,0 +1,18 @@
+/* animate book */
+.animate-book #gal-reel-prev-inner{
+transform: scale(1,1) rotateY(-160deg) translateX(-15vw);
+}
+
+.animate-book #gal-reel-next-inner{
+transform: scale(1,1) rotateY(160deg) translateX(15vw);
+}
+
+.animate-book #gal-reel-now-inner{
+transform: scale(1,1) rotateY(0) translateX(0);
+}
+
+.animate-book .gal-main-slide-left, .animate-book .gal-main-slide-right{
+transform: scale(0.8,0.8) rotateY(0deg) translateX(0) !important;
+}
+
+/* end animate book */

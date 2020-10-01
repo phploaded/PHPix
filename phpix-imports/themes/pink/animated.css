@@ -1,0 +1,10 @@
+@import "static.css";
+
+#flscrn-inner{
+animation: pinkbg 30s infinite linear;
+}
+
+@keyframes pinkbg{
+0%{background-position-x:0;}
+100%{background-position-x:100%;}
+}

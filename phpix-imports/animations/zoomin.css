@@ -1,0 +1,5 @@
+/* animate zoomin */
+.animate-zoomin #gal-reel-prev-inner, .animate-zoomin #gal-reel-next-inner{
+transform: scale(0.8,0.8);
+}
+/* end animate zoomin */

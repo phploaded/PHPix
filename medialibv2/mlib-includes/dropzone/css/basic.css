@@ -1,0 +1,5 @@
+.dropzone{border:0 !important;}
+
+.dz-clickable{
+background:url('../images/upload.png') no-repeat center center !important;
+}

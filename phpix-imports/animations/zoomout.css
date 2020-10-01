@@ -1,0 +1,5 @@
+/* animate zoomout */
+.animate-zoomout #gal-reel-prev-inner, .animate-zoomout #gal-reel-next-inner{
+transform: scale(1.4,1.4);
+}
+/* end animate zoomout */

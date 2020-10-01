@@ -1,0 +1,68 @@
+.gal-close:after, .albtn-close:after{
+background-image:url("svg/close.svg");
+}
+
+.album-nav-play, .gal-play:after{
+background-image:url("svg/play.svg");
+}
+
+.album-nav-rotate, .gal-rotate:after{
+background-image:url("svg/rotate.svg");
+}
+
+.gal-pause:after{
+background-image:url("svg/pause.svg") !important;
+}
+
+.gal-fullscreen:after{
+background-image:url("svg/fullscreen.svg");
+}
+
+.gal-screenfit:after{
+background-image:url("svg/expand.svg");
+}
+
+.gal-zoomfit .gal-screenfit:after{
+background-image:url("svg/shrink.svg") !important;
+}
+
+.gal-restore:after{
+background-image:url("svg/restore.svg") !important;
+}
+
+.gal-xtag-toggle:after{
+background-image:url("svg/tag.svg");
+}
+
+.gal-xtag-gear:after{
+background-image:url("svg/settings.svg");
+}
+
+.album-nav-picinfo, .gal-share-picinfo:after{ background-image: url("svg/info.svg"); }
+.gal-animation-switch:after{ background-image: url("svg/switch.svg"); }
+.gal-share-social:after{ background-image: url("svg/share.svg"); }
+.gal-share-dl:after{ background-image: url("svg/download.svg"); }
+.gal-share-cart:after{ background-image: url("svg/add-cart.svg"); }
+.gal-share-link:after{ background-image: url("svg/link.svg"); }
+.gal-thumbnails:after{ background-image:url("svg/thumbnails.svg"); }
+
+
+.gal-cart-indicator{background-image: url('svg/cart.svg');}
+
+.gal-mobile-controls{background-image: url('svg/menu.svg');}
+
+#gal-crop-exit{
+background-image: url('svg/close.svg');
+}
+
+#gal-crop-toggle{
+background-image: url('svg/exchange.svg');
+}
+
+.albtn-back:after{background-image:url('svg/back.svg');}
+.albtn-fullscreen:after{background-image:url('svg/fullscreen.svg');}
+.albtn-settings:after{background-image:url('svg/settings.svg');}
+.albtn-albinfo:after{ background-image: url("svg/info.svg"); }
+.albtn-unlock:after{ background-image: url("svg/locked.svg"); }
+.albtn-logout:after{ background-image: url("svg/logout.svg"); }
+.albtn-menu:after{background-image: url("svg/mmenu.svg");}

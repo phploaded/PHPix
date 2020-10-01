@@ -1,0 +1,15 @@
+#flscrn, .gal-zoomed, .gal-crop-bg{
+background-color:rgb(89,89,89);
+}
+
+.album-bar{
+background-color:rgb(136,129,119);
+}
+
+.gal-buttons-flat-dark .gal-crop-toggles, .gal-buttons-flat-dark .gal-mobile-controls, .gal-buttons-flat-dark .gal-cart-indicator, .gal-buttons-flat-dark ul.gal-share-menu, .gal-buttons-flat-dark .gal-toolbar{
+background-color:rgb(240, 240, 240);
+}
+
+.gal-buttons-flat-dark .gal-crop-toggles > li, .gal-buttons-flat-dark .gal-mobile-controls, .gal-buttons-flat-dark .gal-cart-indicator, .gal-buttons-flat-dark ul.gal-share-menu > li, .gal-buttons-flat-dark .gal-toolbar > li{
+border-color:rgb(127, 127, 127);
+}

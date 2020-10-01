@@ -1,0 +1,9 @@
+/* animate shiftout */
+.animate-shiftout #gal-reel-prev-inner{
+transform: scale(0.8,0.8) rotateY(-22deg);
+}
+
+.animate-shiftout #gal-reel-next-inner{
+transform: scale(0.8,0.8) rotateY(22deg);
+}
+/* end animate shiftout */

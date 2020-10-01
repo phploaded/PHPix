@@ -1,0 +1,9 @@
+/* animate movexyz */
+.animate-movexyz #gal-reel-next-inner{
+transform: scale(0.6,0.6) rotateZ(-10deg) rotateX(-10deg) rotateY(-10deg);
+}
+
+.animate-movexyz #gal-reel-prev-inner{
+transform: scale(0.6,0.6) rotateZ(10deg) rotateX(10deg) rotateY(10deg);
+}
+/* end animate movexyz */

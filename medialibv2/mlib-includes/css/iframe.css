@@ -1,0 +1,41 @@
+body{
+margin:0;
+padding:0;
+}
+
+#addmoreupload, .mlib_delete_upload{
+border:0;
+background-color:red;
+color:#fff;
+font:bold 14px arial;
+padding:5px 10px;
+min-width:80px;
+cursor:pointer;
+}
+
+#addmoreupload{
+background-color:green;
+}
+
+.iframe-form input[type="file"]{
+padding:5px;
+font:bold 14px arial;
+width:230px;
+}
+
+.iframe-form input[type="submit"]{
+border:0;
+background-color:#333;
+color:#fff;
+font:bold 20px arial;
+padding:20px 30px;
+min-width:150px;
+cursor:pointer;
+margin:0 auto;
+display:block;
+}
+
+.mlib-extra-upload{
+margin:10px;
+float:left;
+}

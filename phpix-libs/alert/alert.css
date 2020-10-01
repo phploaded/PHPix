@@ -1,0 +1,178 @@
+
+.phpl-alert-ctr{
+position:relative;
+z-index:9999;
+}
+
+.phpl-alert-bg{
+position:fixed;
+top:0;
+bottom:0;
+left:0;
+right:0;
+background-color:rgba(0,0,0,0.4);
+}
+
+
+.gal-download-ready{
+color:#00b300;
+font-weight:bold;
+text-decoration:none;
+}
+
+
+.phpl-alert-box-outer{
+position:fixed;
+width:100%;
+height:100%;
+top:0;
+bottom:0;
+left:0;
+right:0;
+display:table;
+}
+
+.phpl-alert-box-inner{
+display:table-cell;
+vertical-align:middle;
+}
+
+.phpl-alert-box{
+max-width:400px;
+min-height:100px;
+background-color:#fff;
+font:13px verdana, sans-serif;
+color:#333;
+margin:0 auto;
+position:relative;
+box-shadow:0 0 3px #000;
+border:1px solid #000;
+}
+
+.phpl-alert-box-top{
+background-color:#135f97;
+}
+
+.phpl-alert-box-top-text{
+float:left;
+font:bold 13px/20px verdana;
+color:#fff;
+padding:5px 10px;
+}
+
+.phpl-alert-box-top-close{
+float:right;
+font:bold 16px/20px arial;
+color:#fff;
+padding:5px;
+text-shadow:1px 1px 1px #000;
+width:21px;
+text-align:center;
+cursor:pointer;
+}
+
+.phpl-alert-box-middle{
+background-color:#fff;
+padding:10px;
+color:#333;
+overflow:auto;
+min-height:50px;
+position:relative;
+}
+
+
+.phpl-alert-box-middle p, .phpl-alert-box-middle h1, .phpl-alert-box-middle h2, .phpl-alert-box-middle h3, .phpl-alert-box-middle h4, .phpl-alert-box-middle h5{
+margin: 0;
+padding: 0;
+}
+
+
+.phpl-alert-box-bottom{
+background-color:#fff;
+padding:10px;
+border-top:1px solid silver;
+text-align:right;
+}
+
+.phpl-alert-btn-primary, .phpl-alert-btn-success, .phpl-alert-btn-info, .phpl-alert-btn-danger, .phpl-alert-btn-warning{
+float:right;
+background-color:#135f97;
+color:#fff;
+border:1px solid #333;
+text-align:center;
+padding:4px 8px;
+font:bold 13px verdana;
+margin-left:5px;
+cursor:pointer;
+box-shadow:0 0 2px gray;
+}
+
+.phpl-alert-btn-success{
+background-color:#0a5b00;
+}
+
+.phpl-alert-btn-danger{
+background-color:#d50000;
+}
+
+.phpl-alert-btn-info{
+background-color:#135f97;
+}
+
+.phpl-alert-btn-warning{
+background-color:#757500;
+}
+
+.phpl-alert-btn-primary{
+background:#eee;
+color:#333;
+}
+
+.phpl-alert-table{
+width:100%;
+border-collapse:collapse;
+border:1px solid #ddd;
+}
+
+.phpl-alert-table input[type="text"], .phpl-alert-table input[type="password"], .phpl-alert-table textarea{
+width: 100%;
+padding: 5px;
+box-sizing: border-box;
+border: 1px solid gray;
+box-shadow: 0 0 4px #666 inset;
+background-color: #fff;
+}
+
+.phpl-alert-table tr:nth-child(even) {background-color: #ddd;}
+
+.phpl-alert-table tr > td, .phpl-alert-table tr > th{
+padding: 8px;
+}
+
+.phpl-alert-table tr > th{
+text-align:center;
+}
+
+.phpl-alert-table tr > td:last-child{
+text-align:right;
+}
+
+.phpl-alert-loading .phpl-alert-box-top, .phpl-alert-loading .phpl-alert-box-middle, .phpl-alert-loading .phpl-alert-box-bottom{
+visibility: hidden;
+}
+
+.phpl-alert-loading{position:relative;}
+
+.phpl-alert-loading:before{
+background-repeat: no-repeat;
+background-image: url(loading.svg);
+content: ' ';
+display: block;
+position: absolute;
+left: 0;
+right: 0;
+top: 0;
+bottom: 0;
+background-position: center center;
+background-size: 90% 90%;
+}

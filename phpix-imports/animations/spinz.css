@@ -1,0 +1,9 @@
+/* animate spinz */
+.animate-spinz #gal-reel-next-inner{
+transform: scale(0.5,0.5) rotateZ(-360deg);
+}
+
+.animate-spinz #gal-reel-prev-inner{
+transform: scale(0.5,0.5) rotateZ(360deg);
+}
+/* end animate spinz */

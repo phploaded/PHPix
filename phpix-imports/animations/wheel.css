@@ -1,0 +1,17 @@
+/* animate wheel */
+.animate-wheel #gal-reel-next-inner{
+transform: scale(0.5,0.5) rotateZ(22deg);
+}
+
+.animate-wheel #gal-reel-prev-inner{
+transform: scale(0.5,0.5) rotateZ(-22deg);
+}
+
+.animate-wheel .gal-main-slide-left{
+transform: scale(0.5,0.5) rotateZ(22deg);
+}
+
+.animate-wheel .gal-main-slide-right{
+transform: scale(0.5,0.5) rotateZ(-22deg);
+}
+/* end animate wheel */

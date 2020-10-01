@@ -1,0 +1,22 @@
+/*! Created: timestamp */.zoomIn{
+	  display: flex;
+  align-items: center;
+  justify-content: center;
+	position:relative;border:0;overflow:hidden;cursor:pointer;background-color:#000;}.zoomIn>img{cursor: url('cursor-zoomout.png'), auto;}
+
+.zoomIn > .description{
+position:fixed;
+top:10px;
+left:10px;
+font:32px arial, sans-serif;
+color:#fff;
+box-sizing:border-box;
+text-shadow:1px 1px 3px #000;
+}
+
+.zoomIn>.description>h2{font-size:1.3em;font-family:'Calibri';font-weight:'normal';margin:0;display:inline}.zoomIn>.description>.zoom{float:right}.zoomIn>.description>.zoom::after{content:'x ZOOM'}
+
+/*#ImageZoom{
+	will-change: transform;
+}*/
+/*# sourceMappingURL=style.css.map */

@@ -1,0 +1,7 @@
+/* animate oval */
+.animate-oval .gal-main-slide-right img, .animate-oval .gal-main-slide-left img, .animate-oval #gal-reel-next-inner img, .animate-oval #gal-reel-prev-inner img{
+border-radius:100%;
+}
+
+#gal-reel img{transition:border-radius 0.4s;}
+/* end animate oval */

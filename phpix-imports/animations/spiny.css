@@ -1,0 +1,9 @@
+/* animate spiny */
+.animate-spiny #gal-reel-prev-inner{
+transform: scale(0.5,0.5) rotateY(360deg);
+}
+
+.animate-spiny #gal-reel-next-inner{
+transform: scale(0.5,0.5) rotateY(-360deg);
+}
+/* end animate spiny */

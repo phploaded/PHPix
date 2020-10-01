@@ -1,0 +1,1 @@
+<p style="margin:50px;padding:20px;border:1px solid silver;background:#eee;font:18px verdana;">There is no content in this file. This file can be deleted or replaced, it will not affect anything. PHPix Photo Gallery can be seen by <a href="phpix-album.php">clicking here</a>.</p>

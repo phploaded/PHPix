@@ -1,0 +1,5 @@
+/* animate plain */
+.animate-plain #gal-reel-prev-inner, .animate-plain #gal-reel-next-inner, .animate-plain #gal-reel-now-inner{
+transform: scale(1,1);
+}
+/* end animate plain */

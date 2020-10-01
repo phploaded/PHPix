@@ -1,0 +1,55 @@
+@import "common.css";
+
+#gal-reel-prev-inner, #gal-reel-next-inner, .gal-main-slide-right, .gal-main-slide-left{
+background-color:rgba(79,118,128,0.8) !important;
+}
+
+#gal-reel-now-inner{
+background-color:rgba(79,118,128,0.2);
+}
+
+#flscrn-inner{
+background-color:#000;
+display:flex;
+justify-content: center;
+align-items: baseline;
+}
+
+#flscrn-inner:before{
+background-image: url(light.png);
+background-repeat:no-repeat;
+background-position:center center;
+background-size:100% 100%;
+position:fixed;
+width:100vw;
+height:100vw;
+display:block;
+content:' ';
+bottom: 0;
+margin-bottom: -50vw;
+transform:scale(2);
+}
+
+
+#flscrn-inner:after{
+background-image:url('honeycomb.svg');
+background-position:center center;
+position:fixed;
+background-size:60px;
+top:0;
+left:0;
+right:0;
+bottom:0;
+display:block;
+content:' ';
+}
+
+.gal-potrait #flscrn-inner{
+align-items: flex-end;
+}
+
+.gal-potrait #flscrn-inner:before{
+width:100vh;
+height:100vh;
+margin-bottom: 0;
+}
