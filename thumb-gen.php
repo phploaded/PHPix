@@ -4,8 +4,15 @@ include('phpix-config.php');
 include('phpix-front-functions.php');
 $file = $_REQUEST['id'];
 $quality = $_REQUEST['q'];
+
+if (!is_dir($quality.'/')) {
+mkdir($quality.'/');
+}
+
 $thumb = get_thumb($file, $quality);
 $flag = 'error';
+
+
 
 //echo $gallery_domain.'full/'.$file;
 if(file_exists($quality.'/'.$thumb)){
