@@ -1,5 +1,28 @@
 <?php 
 
+   // Function to remove folders and files 
+    function rrmdir($dir) {
+        if (is_dir($dir)) {
+            $files = scandir($dir);
+            foreach ($files as $file)
+                if ($file != "." && $file != "..") rrmdir("$dir/$file");
+            rmdir($dir);
+        }
+        else if (file_exists($dir)) unlink($dir);
+    }
+
+function xcopy($src, $dest) {
+    foreach (scandir($src) as $file) {
+        if (!is_readable($src . '/' . $file)) continue;
+        if (is_dir($src .'/' . $file) && ($file != '.') && ($file != '..') ) {
+            mkdir($dest . '/' . $file);
+            xcopy($src . '/' . $file, $dest . '/' . $file);
+        } else {
+            copy($src . '/' . $file, $dest . '/' . $file);
+        }
+    }
+}
+
 function create_file($name, $data){
 if(!file_exists($name)){
 file_put_contents($name, $data);
@@ -89,7 +112,7 @@ $zipFile = 'phpix-latest.zip';
 if(!file_exists($zipFile)){
 set_time_limit(3600);
 //$response = file_get_contents("http://localhost/updates/packages/phpix-latest.zip");
-$response = file_get_contents("https://raw.githubusercontent.com/phploaded/PHPix/master/phpix-latest.zip");
+$response = file_get_contents("https://github.com/phploaded/PHPix/archive/master.zip");
 file_put_contents($zipFile, $response);
 }
 
@@ -222,6 +245,12 @@ if ($zip->open($zipFile) === TRUE) {
     $zip->extractTo('./');
     $zip->close();
 }
+
+
+xcopy('PHPix-master/' , './' );
+
+rrmdir('PHPix-master/');
+
 
 // create phpix config file
 @unlink('phpix-config.php');
