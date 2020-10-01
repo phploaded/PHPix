@@ -10,9 +10,48 @@ include('phpix-info.php');
 
 <div class="well">
 <?php 
-$filedata = file_get_contents($software_jsonURL.'?v='.$software_version);
-$x = json_decode($filedata, true);
-echo $filedata;
+$filedata = file_get_contents($software_jsonURL);
+$data = json_decode($filedata, true);
+$stable = $data['stable'];
+
+function nextitem($item){
+global $stable;
+global $data;
+$found = 0;
+$i=$item+0.1;
+
+	while($i <= $data['latest']){
+	if(in_array((string)$i, $stable) && $found==0){
+	$found = $i;
+	}
+	$i = $i + 0.1;
+	}
+
+if($found!=''){
+return $found;
+} else {
+return $data['latest'];
+}
+
+}
+
+$curr_ver = $software_version;
+
+if($curr_ver==$data['latest']){
+echo 'No new updates found! You are using the latest version of PHPix!';
+} else {
+$next = nextitem($curr_ver);
+if($next!=$data['latest']){
+echo '<h3><b class="text-success">New updates found!</b> PHPix '.$data['latest'].' is the latest version.</h3>';
+echo '<p><button onclick="start_update(\''.$next.'\')" class="btn btn-lg btn-success">UPDATE to '.$next.'</button></p>
+<p>You must update PHPix to '.$next.' before you can update to latest version because it contains important database upgrades.</p>';
+} else {
+echo '<h3><b class="text-success">New updates found!</b> PHPix '.$data['latest'].' is the latest version.</h3>';
+echo '<p><button onclick="start_update(\''.$next.'\')" class="btn btn-lg btn-success">UPDATE NOW</button></p>
+<p>You can update PHPix to '.$next.' (latest version) now.</p>';
+}
+}
+
 
 
  ?>
