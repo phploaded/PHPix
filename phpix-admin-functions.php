@@ -3,6 +3,16 @@ function file_mod($path){
 return filemtime($path);
 }
 
+function rrmdir($dir) {
+        if (is_dir($dir)) {
+            $files = scandir($dir);
+            foreach ($files as $file)
+                if ($file != "." && $file != "..") rrmdir("$dir/$file");
+            rmdir($dir);
+        }
+        else if (file_exists($dir)) unlink($dir);
+}
+
 function xdate($time, $format = 'global', $livestamp = 'both', $before_livestamp = ' (', $after_livestamp = ')'){
 if($format=='global'){
 global $date_format;
