@@ -25,6 +25,10 @@ if($type=='pi'){
 $location = 'https://pinterest.com/pin/create/button/?url=&media='.$url.'&description=';
 }
 
+if($type=='wh'){
+$location = 'https://api.whatsapp.com/send?text='.urlencode($url);
+}
+
 if($location!=''){
 echo"<script>document.location.href = '$location';</script>";
 }
