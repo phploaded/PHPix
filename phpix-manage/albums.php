@@ -13,7 +13,13 @@ notify('There are <b>'.$xdata['count'].' photos</b> in <b>'.$xdata['title'].'</b
 notify('No album found with ID = <b>'.$_GET['delete'].'</b>', 'albums', 'warning');
 } else {
 @unlink('cover/'.$xdata['thumb']);
+if($_SESSION['PHPix']!=''){
 mysqli_query($con, "DELETE FROM `".$prefix."albums` WHERE `id`='".$_GET['delete']."'");
+} elseif($_SESSION['phpixuser']!=''){
+mysqli_query($con, "DELETE FROM `".$prefix."albums` WHERE `id`='".$_GET['delete']."' AND `uid`='".$_SESSION['phpixuser']."'");
+} else {
+die('request aborted!');
+}
 notify('<b>'.$xdata['title'].'</b> was deleted successfully!', 'albums', 'success');
 }
 
@@ -36,8 +42,17 @@ notify('<b>'.$xdata['title'].'</b> was deleted successfully!', 'albums', 'succes
     <tbody>
 <?php 
 
-$res = mysqli_query($con, "SELECT * FROM `".$prefix."albums` 
-ORDER BY `".$prefix."albums`.`created` DESC");
+if($_SESSION['PHPix']!=''){
+$sql2 = "SELECT * FROM `".$prefix."albums` 
+ORDER BY `".$prefix."albums`.`created` DESC";
+} 
+
+if($_SESSION['phpixuser']!=''){
+$sql2 = "SELECT * FROM `".$prefix."albums` WHERE `uid`='".$_SESSION['phpixuser']."'
+ORDER BY `".$prefix."albums`.`created` DESC";
+}
+
+$res = mysqli_query($con, $sql2);
 
 $i=0;
 while($row = mysqli_fetch_assoc($res)){
@@ -49,12 +64,20 @@ $photo = $domain.'cover/'.$row['thumb'];
 $photo = $domain.'phpix-libs/images/holder.svg';
 }
 
+$albums = $albums.'<option value="'.$row['id'].'">'.$row['title'].'</option>';
+
+if($row['parent']==''){
+$parent = '(Top folder)';
+} else {
+$parent = '(Sub folder)';
+}
+
 echo'<tr id="row-'.$row['id'].'">
-<td class="nopadding"><img src="'.$photo.'"></td>
+<td class="nopadding"><img class="album-thumb" src="'.$photo.'"></td>
 <td class="album-count">'.$row['count'].'</td>
 <td>'.xdate($row['created'], "d-m-Y, h:i a", "both", '<br><i>', '</i>').'</td>
 <td>'.xdate($row['updated'], "d-m-Y, h:i a", "both", '<br><i>', '</i>').'</td>
-<td class="album-info"><b class="album-title">'.$row['title'].'</b><p>'.$row['descr'].'</p>
+<td class="album-info"><b class="album-title">'.$row['title'].' '.$parent.'</b><p>'.$row['descr'].'</p>
 <div class="album-buttons">
 <a class="btn btn-sm btn-success" target="_blank" href="'.$domain.''.$albumFILE.'?aid='.$row['id'].'">Browse</a> 
 <a class="btn btn-sm btn-warning" onclick="album_manage(this, \''.$row['id'].'\')" href="javascript:void(0)">Manage</a> 
@@ -68,6 +91,8 @@ echo'<tr id="row-'.$row['id'].'">
  ?>
     </tbody>
 </table>
+
+<select style="display:none;" id="album-ids"><?php echo $albums; ?></select>
 
 <p>&nbsp;</p>
 

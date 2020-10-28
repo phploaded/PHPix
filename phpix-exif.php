@@ -117,7 +117,7 @@ echo'<div xtarget="gal_info_main" class="gal-title"><b class="gal-expand" title=
 <p>Uploaded in <a href="'.$gallery_domain.'album.php?aid='.$data['folder'].'">'.$data['albumName'].'</a> ('.$data['count'].' photos)</p>
 </div>
 
-<div xtarget="gal_info_file" class="gal-title"><b class="gal-expand" title="Click this icon to toggle information"></b><b title="Click this icon or press shift+i on keyboard to pin/unpin" class="gal-pin">📌</b>File &amp; Attributes</div>
+<div xtarget="gal_info_file" class="gal-title"><b class="gal-expand" title="Click this icon to toggle information"></b>File &amp; Attributes</div>
 <div class="gal-info gal_info_file">
 <table>
 <tr><td>File Name :</td><td>'.$file_parts['filename'].'.'.$file_parts['extension'].'</td></tr>
@@ -129,7 +129,7 @@ echo'<div xtarget="gal_info_main" class="gal-title"><b class="gal-expand" title=
 <br />
 </div>
 
-<div xtarget="gal_info_exif" class="gal-title"><b class="gal-collapse" title="Click this icon to toggle information"></b>Exif Information</div>
+<div xtarget="gal_info_exif" class="gal-title"><b class="gal-expand" title="Click this icon to toggle information"></b>Exif Information</div>
 <div class="gal-tabs gal_info_exif">
 <div class="gal-exif">
 <table>

@@ -1,8 +1,26 @@
 <?php 
+
+function admin_only(){
+global $phpix_user;
+if($phpix_user!=1){die('<h4 class="text-danger"><br />Admin leavel access needed. You are not authorised to access this area!</h4>');}
+}
+
 function file_mod($path){
 return filemtime($path);
 }
 
+function xsize($size){
+if($size==0){
+return '0 B';
+} else {
+$base = log($size) / log(1024);
+$suffix = array(" B", " Kb", " Mb", " Gb", " Tb");
+$f_base = floor($base);
+return round(pow(1024, $base - floor($base)), 1) . $suffix[$f_base];
+}
+}
+
+// Function to remove folders and files 
 function rrmdir($dir) {
         if (is_dir($dir)) {
             $files = scandir($dir);
@@ -11,6 +29,18 @@ function rrmdir($dir) {
             rmdir($dir);
         }
         else if (file_exists($dir)) unlink($dir);
+}
+
+function xcopy($src, $dest) {
+    foreach (scandir($src) as $file) {
+        if (!is_readable($src . '/' . $file)) continue;
+        if (is_dir($src .'/' . $file) && ($file != '.') && ($file != '..') ) {
+            mkdir($dest . '/' . $file);
+            xcopy($src . '/' . $file, $dest . '/' . $file);
+        } else {
+            copy($src . '/' . $file, $dest . '/' . $file);
+        }
+    }
 }
 
 function xdate($time, $format = 'global', $livestamp = 'both', $before_livestamp = ' (', $after_livestamp = ')'){
@@ -87,6 +117,11 @@ $notify[$index] = $notify[$index].'<div class="alert alert-dismissible alert-'.$
 </div>';
 }
 
+function admin_enqueue($url){
+global $gallery_domain;
+return $gallery_domain.''.$url.'?t='.filemtime($url);
+}
+
 function slugify($text){
   // replace non letter or digits by -
   $text = preg_replace('~[^\pL\d]+~u', '-', $text);
@@ -158,6 +193,8 @@ $out['options'] = $out['options'].'<option value="'.$file.'">'.$i.'. '.$file.'</
 $out['checkboxes'] = $out['checkboxes'].'<li><input type="checkbox" name="'.$dirname.'[]" id="'.$dirname.'-'.$file.'" value="'.$file.'"> '.$file.'</li>';
 ++$i;
 }
+
+$out['checkboxes'] = '<li><input type="checkbox" data-chk="'.$dirname.'[]" onclick="toggle_all_checkboxes(this)"> Toggle all</li>'.$out['checkboxes'];
 
 return $out;
 }

@@ -2,13 +2,84 @@
 
 include('mlib-config.php');
 
+if($mlib_current_user!=''){
 $method = $_POST['func'];
 
+/* creates a proper list of emails from input text. Removed unwanted chars, lines, spaces, etc */
+function clean_emails($emails){
+$emails = str_replace("\r\n", " ", $emails);
+$emails = str_replace("\n", " ", $emails);
+$emails = str_replace("  ", " ", $emails);
+$emails = str_replace(" ", ",", $emails);
 
+$ids = explode(",", $emails);
+
+foreach($ids as $key => $email){
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+unset($ids[$key]);
+}
+}
+
+$emails = implode(",", $ids);
+
+return $emails;
+}
 
 if($method == ''){
 die('No direct access. No access identifier found.');
 }
+
+
+if($method == 'mlib_photo_rotate'){
+
+$dirs = array("full");
+
+$parts = pathinfo($_POST['u']);
+$newid = uniqid();
+
+
+foreach($dirs as $dir){
+$filename = '../'.$dir.'/' . $_POST['u'];
+$newfile = $newid.'.'.$parts['extension'];
+$newname = '../'.$dir.'/'.$newfile;
+if(file_exists($filename)){
+
+$degrees = 360-$_POST['deg'];
+//$postid = $_POST['postid'];
+
+$mime = mime_content_type($filename);
+
+// Content type
+header('Content-type: '.$mime);
+
+// Load
+$source = imagecreatefromjpeg($filename);
+
+// Rotate
+$rotate = imagerotate($source, $degrees, 0);
+
+imagejpeg($rotate, $newname);
+// Free the memory
+imagedestroy($source);
+imagedestroy($rotate);
+}
+}
+
+@unlink('../full/' . $_POST['u']);
+@unlink('../thumb/' . $_POST['u']);
+@unlink('../qhd/' . $_POST['u']);
+@unlink('../hd/' . $_POST['u']);
+@unlink('../fhd/' . $_POST['u']);
+
+get_image_thumb($newfile, 'h=150');
+
+$sql = "UPDATE `".$prefix."uploads` SET `url`='$newfile', `thumb`='$newfile' WHERE `id`='".$_POST['id']."'";
+mysqli_query($con, $sql);
+
+echo $newfile;
+}
+
+
 
 if($method == 'mlib_set_cover'){
 $aid = $_POST['aid'];
@@ -40,16 +111,50 @@ echo $count;
 }
 
 
+if($method == 'mlib_change_album'){
+
+$xto = $_POST['xto'];
+$xfrom = $_POST['xfrom'];
+$xphoto = $_POST['xphoto'];
+
+mysqli_query($mlib_db, "UPDATE `".MLIBPREFIX."uploads` SET `folder`='$xto' WHERE `id`='$xphoto'");
+mysqli_query($mlib_db, "UPDATE `".MLIBPREFIX."albums` SET count = count - 1 WHERE `id`='$xfrom'");
+mysqli_query($mlib_db, "UPDATE `".MLIBPREFIX."albums` SET count = count + 1 WHERE `id`='$xto'");
+}
+
+if($method == 'mlib_move_items'){
+
+$xto = $_POST['xto'];
+$xfrom = $_POST['xfrom'];
+
+$xsql = '';
+foreach($_POST['mlibid'] as $key => $val){
+$xsql = $xsql." OR `id`='".$val."'";
+}
+
+$count = count($_POST['mlibid']);
+
+mysqli_query($mlib_db, "UPDATE `".MLIBPREFIX."uploads` SET `folder`='$xto' WHERE `id`='xyz'".$xsql);
+mysqli_query($mlib_db, "UPDATE `".MLIBPREFIX."albums` SET count = count - ".$count." WHERE `id`='$xfrom'");
+mysqli_query($mlib_db, "UPDATE `".MLIBPREFIX."albums` SET count = count + ".$count." WHERE `id`='$xto'");
+echo $count.' Files moved!';
+}
+
+
 if($method == 'load_thumbs'){
 
 if($_REQUEST['ipp']==''){$ipp=30;} else {$ipp=$_REQUEST['ipp'];}
+if($_REQUEST['sort']==''){$xsort='time-DESC';} else {$xsort=$_REQUEST['sort'];}
 if($_REQUEST['page']==''){$page=0;} else {$page=$_REQUEST['page']-1;}
+
+$sort = explode("-", $xsort);
+
 $limit = $page * $ipp;
 
 $i=0;
 $data = array();
 $complete = mysqli_fetch_assoc(mysqli_query($mlib_db, "SELECT COUNT(*) as `gtotal` FROM `".MLIBPREFIX."uploads` WHERE `uid`='$mlib_current_user' AND `folder`='".$_GET['fid']."'"));
-$qry = "SELECT * FROM `".MLIBPREFIX."uploads` WHERE `uid`='$mlib_current_user' AND `folder`='".$_GET['fid']."' ORDER BY `time` DESC limit $limit, $ipp";
+$qry = "SELECT * FROM `".MLIBPREFIX."uploads` WHERE `uid`='$mlib_current_user' AND `folder`='".$_GET['fid']."' ORDER BY `".$sort[0]."` ".$sort[1]." limit $limit, $ipp";
 $res = mysqli_query($mlib_db, $qry);
 
 while($row = mysqli_fetch_assoc($res)){
@@ -62,6 +167,7 @@ $data[] = $row;
 $data['total'] = $i;
 $data['page'] = $page+1;
 $data['ipp'] = $ipp;
+$data['sort'] = $xsort;
 $data['gtotal'] = $complete['gtotal'];
 echo json_encode($data);
 }
@@ -197,18 +303,62 @@ echo json_encode($data);
 
 if($method=='mlib_single_edit'){
 $title = htmlentities($_POST['title'], ENT_QUOTES, "UTF-8");
+$access = htmlentities($_POST['access'], ENT_QUOTES, "UTF-8");
 $caption = htmlentities($_POST['caption'], ENT_QUOTES, "UTF-8");
 $tagsx = htmlentities($_POST['tags'], ENT_QUOTES, "UTF-8");
 $tags = format_tags($tagsx);
-mysqli_query($mlib_db, "UPDATE `".MLIBPREFIX."uploads` SET `title`='$title', `caption`='$caption', `tags`='$tags' WHERE `id`='".$_POST['mlibid']."'");
+
+mysqli_query($mlib_db, "UPDATE `".MLIBPREFIX."uploads` SET `title`='$title', `caption`='$caption', `tags`='$tags', `access`='$access' WHERE `id`='".$_POST['mlibid']."'");
+
+
+$zmails = $_POST['maillist']; 
+mysqli_query($con, "DELETE FROM `".$prefix."access` WHERE `type`='photo' AND `aid`='".$_POST['mlibid']."'");
+
+if(count($_POST['maillist'])>0){
+foreach($zmails as $key => $val){
+mysqli_query($con, "INSERT INTO `".$prefix."access` (`id`, `uid`, `aid`, `type`) VALUES (NULL, '$val', '".$_POST['mlibid']."', 'photo')");
+}
+}
 
 $data['mlibid']=$_POST['mlibid'];
 $data['title']=$title;
+$data['access']=$access;
 $data['caption']=$caption;
 $data['tags']=$tags;
+$data['emails']=str_replace(',', ', ', $emails);
 $json = json_encode($data);
 echo $json;
 }
+
+
+
+if($method=='mlib_photo_access'){
+
+$xdata = mysqli_query($con, "SELECT `uid` FROM `".$prefix."access` WHERE `type`='photo' AND `aid`='".$_POST['aid']."'");
+
+$uid = '';
+$mails = array();
+while($row = mysqli_fetch_assoc($xdata)){
+$mails[] = $row['uid'];
+}
+
+$mdata = mysqli_query($con, "SELECT `email` FROM `".$prefix."users`");
+
+$out = '';
+while($xrow = mysqli_fetch_assoc($mdata)){
+if(in_array($xrow['email'], $mails)){
+$out = $out.'<option selected="selected" value="'.$xrow['email'].'">'.$xrow['email'].'</option>';
+} else {
+$out = $out.'<option value="'.$xrow['email'].'">'.$xrow['email'].'</option>';
+}
+}
+
+
+echo $out;
+
+}
+
+
 
 if($method=='mlib_save_type'){
 $title = htmlentities($_POST['title'], ENT_QUOTES, "UTF-8");
@@ -218,4 +368,6 @@ mysqli_query($mlib_db, "UPDATE `".MLIBPREFIX."import` SET `title`='$title', `con
 
 /* Destroy db connection if it exists */
 if($mlib_db){mysqli_close($mlib_db);}
+
+}
 ?>

@@ -7,7 +7,7 @@ $responseData = json_decode($verifyResponse);
 
 if($responseData->success){
 if($_POST['pwd']==$admin_key){
-$_SESSION[$website_name]=$_POST['pwd'];
+$_SESSION['PHPix']=$_POST['pwd'];
 $error = '<div class="alert alert-dismissible alert-success">
 <button type="button" class="close" data-dismiss="alert">&times;</button>
 <p><b>Success!</b> login successful! Redirecting...</p>

@@ -7,12 +7,13 @@ var gal_vars_slideshow=false;
 var gal_vars_slide_time=10;
 var gal_vars_elapsed_time=0;
 var gal_vars_slide_timer;
+var gal_vars_remainingURL = '';
 var gal_vars_single_mode = false;
 var gal_vars_single_photo;
 var gal_init_fullscreen = true;
 gal_rrcop_quality = 0.9;
-var gal_share_network_keys = new Array("fb", "tw", "gp", "pi");
-var gal_share_network_names = new Array("Facebook", "Twitter", "Google+", "Pinterest");
+var gal_share_network_keys = new Array("fb", "tw", "gp", "pi", "wh");
+var gal_share_network_names = new Array("Facebook", "Twitter", "Google+", "Pinterest", "WhatsApp");
 var gal_vars_rotate_preview_timer;
 var gal_vars_orientation;
 var gal_vars_mobile_control;
@@ -26,9 +27,11 @@ var gal_vars_rotation = 0;
 var gal_vars_thumbsize = 40;
 var gal_xtag_reinit_timer;
 var gal_vars_touchtip_timer;
+var gal_vars_parentFolder = '';
 var gal_main_slide_timer;
 var gal_vars_notes_ipp = 6;
 var gal_pixq = 'automatic';
+var gal_brightness_elements = '#gal-reel-now-inner img, .flex-images .item img, .album-photo-wrap img';
 
 var getQueryString = function ( field, url ) {
 	var href = url ? url : window.location.href;
@@ -51,6 +54,7 @@ gal_toast('CROP to FIT diabled');
 }
 $(window).trigger('resize');
 }
+
 
 function album_login(){
 album_toggle_sidebar();
@@ -109,6 +113,20 @@ grecaptcha.reset();
 }
 
 
+function album_loadslow(){
+var tot = $('.loadslow').length;
+if(tot != 0){
+var xsrc = $('.loadslow:first').attr('xsrc');
+$('.loadslow:first').attr('onload', 'album_loadslowxx(this)');
+$('.loadslow:first').attr('src', xsrc);
+}
+}
+
+function album_loadslowxx(xthis){
+$(xthis).closest('.album-photo-wrap').css('background-color', '#fff');
+$(xthis).removeClass('loadslow');
+setTimeout("album_loadslow()", 10);
+}
 
 function album_change_pwd(){
 album_toggle_sidebar();
@@ -166,6 +184,7 @@ var xhtml = '<table class="phpl-alert-table">\
 <tr><td>Shift + t</td><td>From settings</td><td>On / Off mini thumbnails</td></tr>\
 <tr><td>Shift + x</td><td>From download</td><td>Edit &amp; save current photo</td></tr>\
 <tr><td>Shift + z</td><td>Mouse Wheel scroll, pinch-in</td><td>On / Off Pan &amp; Zoom for current photo</td></tr>\
+<tr><td>Shift + b</td><td>From settings</td><td>Adjust brightness</td></tr>\
 </table>';
 phpl_alert(xhtml, 'Keyboard Navigation Buttons');
 }
@@ -334,8 +353,8 @@ $('#gal-reel-now-inner').attr('class', 'gal-main-slide-left');
 }
 
 
-function gal_gotoURL(xthis){
-var xurl = $(xthis).attr('xurl');
+function gal_gotoURL(xinput){
+var xurl = xinput;
 $('#album-list-block, #album-notes-block').hide();
 $('#album-pics-block').show();
 var aid = getQueryString('aid', xurl);
@@ -343,11 +362,26 @@ $.get( gal_domain+"phpix-ajax.php?method=album_photos&aid="+aid+"&q="+gal_qualit
 $('#album-pics-block').html(data);
 gal_vars_aid = aid;
 $('title').html('PHPix album : '+aid);
-window.history.pushState( {} , 'phpix', gal_domain+''+albumFILE+'?aid='+aid+'&q='+gal_quality );
+window.history.pushState( {} , 'phpix', gal_domain+'phpix-alt.php?a='+aid );
 // adds ordering and temporary ids
 gal_progress_bar_max = $('#new_thumbs > li').length;
 gal_json_to_tags();
 gal_orientation();
+//alert(gal_vars_remainingURL+'rerer');
+if(gal_vars_remainingURL!='' && gal_vars_remainingURL!='a'){
+var aid_arr = gal_vars_remainingURL.split('.');
+var aid_tot = aid_arr.length;
+var aid_tot_int = aid_tot - 1;
+xnaid = aid_arr[aid_tot_int];
+gal_vars_remainingURL = gal_vars_remainingURL.replace('.'+xnaid, '');
+var xurl = gal_domain+''+albumFILE+'?aid='+xnaid;
+setTimeout(function(){
+$('.album-list b[xurl="'+xnaid+'"]').trigger('click');
+
+}, 100);
+
+}
+
 });
 }
 
@@ -412,13 +446,23 @@ window.history.pushState( {} , 'phpix', gal_domain+''+albumFILE );
 
 
 function album_closePhotos(){
+if(gal_vars_parentFolder!=''){
+var nurl = gal_domain+''+albumFILE+'?aid='+gal_vars_parentFolder;
+gal_gotoURL(nurl);
+} else {
 $('#album-list-block').show();
 $('#album-notes-block').hide();
 $('#album-pics-block').hide().html('');
 $('title').html('PHPix gallery');
 window.history.pushState( {} , 'phpix', gal_domain+''+albumFILE );
 }
+}
 
+
+function gal_close_zoom(){
+jQuery('.gal-zoomed').remove();
+gal_toast('ZOOM deactivated!');
+}
 
 function start_zoom(){
 gal_toast('PAN and ZOOM activated');
@@ -496,7 +540,7 @@ $('#gal-item-'+cid).addClass('fullscreen-item');
 
 var xhtml = '<div id="gal-reel-next"><div id="gal-reel-next-inner"><img style="'+gal_get_css(next_id)+'" data-id="'+next_id+'" src="'+next_thumb+'"><div class="gal_loading"></div></div></div>';
 $('#gal-reel').append(xhtml);
-$('.gal-reel-preloader').append('<img onload="gal_preload_complete(this, \''+next_id+'\')" src="'+next_url+'">');
+$('.gal-reel-preloader').append('<img onload="gal_preload_complete(this)" src="'+next_url+'">');
 panzoom.pan(-$(window).width(), 0, { animate: false });
 gal_sharer();
 gal_reset_navigation();
@@ -507,21 +551,35 @@ var xphoto = $('#gal-item-'+cid+' img').attr('src');
 var aid = getQueryString('aid');
 var uri = xphoto.split('/thumb/');
 $('title').html('PHPix photo - '+uri[1]);
-window.history.pushState( {} , 'phpix', gal_domain+''+albumFILE+'?aid='+aid+'&q='+gal_quality+'&pic='+uri[1] );
+window.history.pushState( {} , 'phpix', gal_domain+'phpix-alt.php?u='+uri[1] );
 gal_set_thumb();
 gal_xtag_reinit();
+
+if(gal_slide_animation=='any-random'){
+setTimeout(function(){gal_random_animation();},600);
+}
 }
 
 
-
-function gal_preload_complete(xthis, dataid){
+function gal_preload_complete(xthis){
 var newSRC = $(xthis).attr('src');
+var thumbSRC = newSRC.replace('/full/', '/thumb/');
+thumbSRC = thumbSRC.replace('/fhd/', '/thumb/');
+thumbSRC = thumbSRC.replace('/hd/', '/thumb/');
+thumbSRC = thumbSRC.replace('/qhd/', '/thumb/');
 $(xthis).removeAttr('onload');
-$('#gal-reel img[data-id="'+dataid+'"]').attr('src', newSRC);
-$('#gal-reel img[data-id="'+dataid+'"]').closest('div').find('.gal_loading').remove();
+
+var isXtag = $('#gal-reel img[src="'+thumbSRC+'"]').closest('div').attr('id');
+if(isXtag=='xtag-element'){
+$('#gal-reel-now-inner').find('.gal_loading').remove();
+} else {
+$('#gal-reel img[src="'+thumbSRC+'"]').closest('div').find('.gal_loading').remove();
+}
+
+$('#gal-reel img[src="'+thumbSRC+'"]').closest('div').find('.gal_loading').remove();
+$('#gal-reel img[src="'+thumbSRC+'"]').attr('src', newSRC);
 $(xthis).remove();
 }
-
 
 
 function gal_shift_prev(){
@@ -551,7 +609,7 @@ $('#gal-item-'+cid).addClass('fullscreen-item');
 
 var xhtml = '<div id="gal-reel-prev"><div id="gal-reel-prev-inner"><img style="'+gal_get_css(prev_id)+'" data-id="'+prev_id+'" src="'+prev_thumb+'"><div class="gal_loading"></div></div></div>';
 $('#gal-reel').prepend(xhtml);
-$('.gal-reel-preloader').append('<img onload="gal_preload_complete(this, \''+prev_id+'\')" src="'+prev_url+'">');
+$('.gal-reel-preloader').append('<img onload="gal_preload_complete(this)" src="'+prev_url+'">');
 panzoom.pan(-$(window).width(), 0, { animate: false });
 gal_sharer();
 gal_reset_navigation();
@@ -562,9 +620,12 @@ var xphoto = $('#gal-item-'+cid+' img').attr('src');
 var aid = getQueryString('aid');
 var uri = xphoto.split('/thumb/');
 $('title').html('PHPix photo - '+uri[1]);
-window.history.pushState( {} , 'phpix', gal_domain+''+albumFILE+'?aid='+aid+'&q='+gal_quality+'&pic='+uri[1] );
+window.history.pushState( {} , 'phpix', gal_domain+'phpix-alt.php?u='+uri[1] );
 gal_set_thumb();
 gal_xtag_reinit();
+if(gal_slide_animation=='any-random'){
+setTimeout(function(){gal_random_animation();},600);
+}
 }
 
 function gal_xtag_reinit(){
@@ -635,6 +696,13 @@ album_notes_readmore();
 
 function gal_ready_settings(){
 
+var xbright = localStorage.getItem('gal_brightness');
+if(xbright !== null){
+gal_vars_brightness = xbright;
+}
+
+
+
 var xanim = localStorage.getItem('gal_setting_animation');
 if(xanim !== null){
 gal_slide_animation = xanim;
@@ -679,7 +747,7 @@ $('body').append('<link id="gal-buttons-css-'+gal_vars_button_set+'" href="'+gal
 $('body').append('<link id="gal-theme-css-'+gal_vars_theme+'" href="'+gal_domain+'phpix-imports/themes/'+gal_vars_theme+'/'+gal_vars_bgmode+'.css" rel="stylesheet" type="text/css" />');
 
 // apply current swipe animation
-$('body').append('<link id="gal-swipe-css-'+gal_slide_animation+'" href="'+gal_domain+'phpix-imports/animations/'+gal_slide_animation+'.css" rel="stylesheet" type="text/css" />');
+$('body').append('<link class="gal-swipe-css" id="gal-swipe-css-'+gal_slide_animation+'" href="'+gal_domain+'phpix-imports/animations/'+gal_slide_animation+'.css" rel="stylesheet" type="text/css" />');
 
 // if single photo was prechosen to open
 gal_preopen_gallery();
@@ -783,8 +851,7 @@ jQuery('body').on('keyup', null, 'shift+z', function(){
 if(jQuery('.gal-zoomed').length==0){
 start_zoom();
 } else {
-jQuery('.gal-zoomed').remove();
-gal_toast('ZOOM deactivated!');
+gal_close_zoom();
 }
 });
 
@@ -811,6 +878,10 @@ jQuery('body').on('keyup', null, 'shift+space', function(){
 if(jQuery('.gal-bg').length==1){
 jQuery('.gal-play').trigger('click');
 }
+});
+
+jQuery('body').on('keyup', null, 'shift+b', function(){
+gal_brightness();
 });
 
 jQuery('body').on('keyup', null, 'shift+x', function(){
@@ -861,7 +932,12 @@ if (screenfull.isFullscreen) {
 screenfull.exit();
 }
 }*/
+
+if($('.gal-zoomed').length==0){
 setTimeout("gal_remove_fullscreen_container()", 300);
+} else {
+gal_close_zoom();
+}
 });
 
 // toggle the fullscreen mode
@@ -1036,13 +1112,13 @@ gal_vars_slide_timer = setTimeout("gal_slideshow()", 1000);
 
 function gal_remove_fullscreen_container(){
 jQuery('#fullscreen').remove();
-$('.album-bar-ctr, .gal-ctr, #album-sidebar').show();
+$('.album-ctr, .album-bar-ctr, .gal-ctr, #album-sidebar').show();
 jQuery('.no-scroll').removeClass('no-scroll');
 gal_stop_slideshow();
 // some bug causes window to be scaled again, hence reinitialized to fix it
 //new flexImages({selector: '.gal', rowHeight: 150});
 $('title').html('PHPix gallery');
-window.history.pushState( {} , 'phpix', gal_domain+''+albumFILE+'?aid='+gal_vars_aid+'&q='+gal_quality );
+window.history.pushState( {} , 'phpix', gal_domain+'phpix-alt.php?a='+gal_vars_aid );
 }
 
 // hide the cursor using css class
@@ -1448,6 +1524,22 @@ var xaid = getQueryString("aid");
 var xpic = getQueryString("pic");
 if(xaid !== null){
 
+var aid_arr = xaid.split('.');
+var aid_tot = aid_arr.length;
+
+if(aid_tot==1){xaid = aid_arr[0];} 
+
+if(aid_tot==2){
+xaid = aid_arr[1];
+}
+
+if(aid_tot>2){
+var aid_tot_int = aid_tot - 1;
+xnaid = aid_arr[aid_tot_int];
+gal_vars_remainingURL = xaid.replace('.'+xnaid, '');
+xaid = xnaid;
+}
+
 if(xpic !== null){ // if aid exists and pic exists
 gal_vars_single_mode = true;
 gal_vars_single_photo = xpic;
@@ -1455,8 +1547,7 @@ gal_vars_single_photo = xpic;
 gal_vars_single_mode = false;
 }
 
-var xurl = gal_domain+''+albumFILE+'?aid='+xaid;
-$('.album-list b[xurl="'+xurl+'"]').trigger('click');
+$('.album-list b[xurl="'+xaid+'"]').trigger('click');
 
 }
 }
@@ -1464,6 +1555,12 @@ $('.album-list b[xurl="'+xurl+'"]').trigger('click');
 // hide zoom leavel info
 function gal_hide_zoom_lvl_func(){
 jQuery('.zoomIn>.description').hide();
+}
+
+
+function album_about(){
+var xhtml = '<p><b>PHPix Gallery</b> is a free and open source software maintained by <a target="_blank" href="http://phploaded.com/project/phpix.html">PHPloaded.com</a> and developed by <a rel="nofollow" target="_blank" href="https://www.facebook.com/sakush100/">Satish Kumar Sharma</a>.<br /><br />Its purpose is to organise personal photo online, without giving away your photos to third party websites and social media platforms. This gives you instant access to your photos anytime, anywhere and any device with just a web browser. This helps to safeguard your photos and have complete control in your hands. <br /><br />This software can be run on self hosted PHP and MySQL server, even on shared linux hosting, very easily.<br /><br /><a target="_blank" href="http://phploaded.com/project/phpix.html">PHPix gallery</a> is released under <b><a rel="nofollow" target="_blank" href="https://raw.githubusercontent.com/phploaded/PHPix/master/LICENSE">MIT licence</a></b>.</p>';
+phpl_alert(xhtml, 'About PHPix Gallery');
 }
 
 // used during slideshow
@@ -1551,7 +1648,7 @@ panzoom.destroy();
 delete window.panzoom;
 }
 
-$('.album-bar-ctr, .gal-ctr, #album-info, #album-sidebar').hide();
+$('.album-ctr, .album-bar-ctr, .gal-ctr, #album-info, #album-sidebar').hide();
 
 var xthumb = $('.fullscreen-item > a > img').attr('xsrc');
 var xphoto = $('.fullscreen-item > a').attr('href');
@@ -1575,19 +1672,19 @@ var next_thumb = $('#gal-item-'+next_id+' img').attr('xsrc');
 var basic_html = '<div id="gal-reel-ctr">\
 <div id="gal-reel">\
 <div id="gal-reel-prev"><div id="gal-reel-prev-inner"><img style="'+gal_get_css(prev_id)+'" data-id="'+prev_id+'" src="'+prev_thumb+'" /><div class="gal_loading"></div></div></div>\
-<div class="gal-reel-panned" id="gal-reel-now"><div id="gal-reel-now-inner"><img style="'+gal_get_css(cid)+'" data-id="'+cid+'" id="gal-hd-img" ontouchmove="gal_touch_controls()" class="gal-hd-img blurred" alt="loading..." src="'+xthumb+'" /><div id="gal-ext-app" class="gal-xtype-'+xtype+'"></div></div></div>\
+<div class="gal-reel-panned" id="gal-reel-now"><div id="gal-reel-now-inner"><img style="'+gal_get_css(cid)+'" data-id="'+cid+'" id="gal-hd-img" ontouchmove="gal_touch_controls()" class="gal-hd-img blurred" alt="loading..." src="'+xthumb+'" /><div class="gal_loading"></div><div id="gal-ext-app" class="gal-xtype-'+xtype+'"></div></div></div>\
 <div id="gal-reel-next"><div id="gal-reel-next-inner"><img style="'+gal_get_css(next_id)+'" data-id="'+next_id+'" src="'+next_thumb+'" /><div class="gal_loading"></div></div></div>\
 </div>\
 </div>\
 <div class="gal-reel-preloader">\
-<img onload="gal_preload_complete(this, \''+prev_id+'\')" src="'+prev_pic+'" />\
-<img onload="gal_preload_complete(this, \''+next_id+'\')" src="'+next_pic+'" />\
+<img onload="gal_preload_complete(this)" src="'+prev_pic+'" />\
+<img onload="gal_preload_complete(this)" src="'+next_pic+'" />\
 </div>';
 
 var aid = getQueryString('aid');
 var uri = xphoto.split('/'+gal_quality+'/');
 $('title').html('PHPix photo - '+uri[1]);
-window.history.pushState( {} , 'phpix', gal_domain+''+albumFILE+'?aid='+aid+'&q='+gal_quality+'&pic='+uri[1] );
+window.history.pushState( {} , 'phpix', gal_domain+'phpix-alt.php?u='+uri[1] );
 
 if(jQuery('.fullscreen').length==1){
 
@@ -1616,7 +1713,7 @@ jQuery('#album-pics-block').append('<div id="fullscreen" class="fullscreen">\
 <div class="zoomed-in-text"></div>\
 <div class="gal-counter"></div>\
 <div class="gal-share-ctr"><div class="gal-share"><div class="gal_loading"></div></div></div>\
-<div class="gal-stats-ctr"><h2>Photo Information</h2><div id="gal_stats" class="gal-stats"><div class="gal_loading"></div></div></div>\
+<div class="gal-stats-ctr"><div onclick="gal_picinfo()" class="gal-picinfo-close">X</div><h2>Photo Information</h2><div id="gal_stats" class="gal-stats"><div class="gal_loading"></div></div></div>\
 <ul class="gal-toolbar"><li class="gal-play"></li><li onclick="gal_rotate()" class="gal-rotate"></li><li onclick="gal_fitscreen()" class="gal-screenfit"></li><li class="gal-fullscreen"></li><li class="gal-close"></li></ul>\
 <div id="gal-reel-out">'+basic_html+'</div>\
 <div class="gal-thumbs-ctr"></div>\
@@ -1675,17 +1772,20 @@ function gal_getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function gal_switch_animationxx(){
-var animstr = "book, movexyz, cubeout, cubein, shiftout, shiftin, tiltout, tiltin, plain, zoomin, zoomout, wheel, spinx, spiny, spinz, oval, ovalbg";
-animstr = animstr.replace(/ /g, "");
-var anim = animstr.split(',');
+function gal_random_animation(){
+var anim = gal_slide_animations;
+// to remove array element by value
+anim = anim.filter(val => val !== "plain");
+anim = anim.filter(val => val !== "any-random");
 var xkey = gal_getRandomInt(0, (anim.length-1));
 var newanim = 'animate-'+anim[xkey];
-var xdata = $('.fullscreen').attr('data-anim');
-$('.fullscreen').attr('data-anim', newanim);
-$('.fullscreen').removeClass(xdata).addClass(newanim);
-gal_toast('Animation changed to '+anim[xkey]);
-gal_mobile_controls('hide');
+var xdata = $('body').attr('data-anim');
+$('body').attr('data-anim', newanim);
+$('body').removeClass(xdata).addClass(newanim);
+
+$('.gal-swipe-css').remove();
+$('body').append('<link class="gal-swipe-css" id="gal-swipe-css-'+anim[xkey]+'" href="'+gal_domain+'phpix-imports/animations/'+anim[xkey]+'.css" rel="stylesheet" type="text/css" />');
+
 }
 
 function gal_switch_animation(xval){
@@ -1726,7 +1826,7 @@ var xhtml = '<form name="gal-settings-form"><table class="phpl-alert-table"><tbo
 <tr><td>Background</td><td><select id="gal-setting-bgmode" name="gal-setting-bgmode"><option value="static">static</option><option value="animated">animated</option><option value="disabled">disabled</option></select></td></tr>\
 <tr><td>Thumbnails</td><td><select id="gal-setting-thumbs" name="gal-setting-thumbs"><option value="show">show</option><option value="hide">hide</option></select></td></tr>\
 </tbody></table>\
-<p style="margin-top:5px;">Pressing <b>defaults</b> button only loads default values, you must press <b>save &amp; apply</b> to save changes!\
+<p style="margin-top:5px;"><a href="javascript:void(0)" onclick="gal_brightness()">Adjust Brightness</a> (Helps with dark photos)</p><p style="margin-top:5px;">Pressing <b>defaults</b> button only loads default values, you must press <b>save &amp; apply</b> to save changes!\
 </p>\
 </form>';
 
@@ -1756,8 +1856,8 @@ var xthumb = localStorage.getItem('gal_setting_thumbnails');
 if(xthumb===null){xthumb=gal_vars_mini_thumbs;}
 $('#gal-setting-thumbs').val(xthumb).trigger('change');
 
-var xanim = ($('body').attr('data-anim')).replace('animate-', '');
-$('#gal-setting-animation').val(xanim).trigger('change');
+//var xanim = ($('body').attr('data-anim')).replace('animate-', '');
+$('#gal-setting-animation').val(gal_slide_animation).trigger('change');
 
 var xbgmode = ($('body').attr('data-bgmode')).replace('gal-bgmode-', '');
 $('#gal-setting-bgmode').val(xbgmode).trigger('change');
@@ -1833,6 +1933,7 @@ $('body').removeClass('animate-'+oldbgmode).addClass('animate-'+bgmode);
 $('body').append('<link id="gal-swipe-css-'+xanim+'" href="'+gal_domain+'phpix-imports/animations/'+xanim+'.css" rel="stylesheet" type="text/css" />');
 gal_switch_animation(xanim);
 localStorage.setItem('gal_setting_animation', xanim);
+gal_slide_animation = xanim;
 
 // thumbnails
 var xthumb = $('#gal-setting-thumbs').val();
@@ -1876,6 +1977,7 @@ var pixq = $('#gal-setting-pixq').val();
 localStorage.setItem('gal_setting_pixq', pixq);
 gal_apply_pixq(pixq);
 
+
 gal_mobile_controls('hide');
 phpl_close_alert();
 gal_toast('Changes applied!');
@@ -1883,6 +1985,12 @@ gal_toast('Changes applied!');
 
 
 function gal_apply_pixq(pixq){
+if(gal_pixq!=pixq){
+phpl_alert('Sending your to homepage in 5 seconds because photo quality is changed! You can navigate to same album again!', 'quality changed');
+setTimeout(function(){
+document.location.href = gal_domain+''+albumFILE;
+}, 5000);
+}
 gal_pixq = pixq;
 gal_set_quality();
 $('.gal .item').each(function() {
@@ -2150,6 +2258,7 @@ function gal_preloaded(xthis){
 var xurl = $(xthis).attr('src');
 $('.gal-hd-img').attr('src', xurl);
 jQuery('.gal-hd-img').removeClass('blurred');
+$('#gal-reel-now-inner .gal_loading').remove();
 $('.gal-nav').show();
 gal_sharer(xurl);
 gal_reset_navigation();
@@ -2208,7 +2317,7 @@ var gal_progress_bar_current = $('#new_thumbs > li').length;
 var pcent = 100-parseInt((gal_progress_bar_current/gal_progress_bar_max)*100);
 if(gal_progress_bar_current!=0){
 	if($('.meter-out').length==0){
-	$('body').prepend('<div class="meter-out"><div class="meter-text">Processing new photos : 0% Complete</div><div class="meter"><span style="width: 0%"></span></div></div><div class="progress_filler"></div>');
+	$('#flscrn').prepend('<div class="meter-out"><div class="meter-text">Processing new photos : 0% Complete</div><div class="meter"><span style="width: 0%"></span></div></div><div class="progress_filler"></div>');
 	} else {
 	$('.meter > span').css('width', pcent+'%');
 	$('.meter-text').html('adding new photos : <b>'+pcent+'%</b> Complete');
@@ -2218,7 +2327,7 @@ $.post( gal_domain+"thumb-gen.php", {id:url, q:gal_quality} ,function(data) {
 $('.gal').prepend(data);
 
 $('li[data-url="'+url+'"]').remove();
-setTimeout(gal_gen_thumbs, 100);
+setTimeout(gal_gen_thumbs, 20);
 
 });
 } else {
@@ -2241,7 +2350,7 @@ $(".gal-title").each(function(){
 var xtarget = $(this).attr('xtarget');
 var xval = localStorage.getItem(xtarget);
 if(xval === null){ // if null, load from html
-var kval = $(this).find('.gal-collapse, .gal-expand').attr('class');
+var kval = 'gal-expand';
 } else {
 var kval = xval;
 }
@@ -2263,7 +2372,7 @@ var xhtml = '';
 for(var i=0;i<xjson.t;i++){
 var str = xjson.data[i].u;
 if (str.indexOf("yt[") >= 0){var xtype='yt';} else {var xtype='photo';}
-xhtml = xhtml+'<li data-h="'+xjson.h+'" data-xtype="'+xtype+'" data-w="'+xjson.data[i].w+'" class="item gal-type-'+xtype+'"><a href="'+gal_domain+''+gal_quality+'/'+xjson.data[i].u+'"><img class="lazyload" src="'+gal_domain+'css/point.png" xsrc="'+gal_domain+'thumb/'+xjson.data[i].u+'" /></a></li>';
+xhtml = xhtml+'<li data-access="'+xjson.data[i].a+'" data-h="'+xjson.h+'" data-xtype="'+xtype+'" data-w="'+xjson.data[i].w+'" class="item gal-type-'+xtype+'"><a href="'+gal_domain+''+gal_quality+'/'+xjson.data[i].u+'"><img class="lazyload" src="'+gal_domain+'css/point.png" xsrc="'+gal_domain+'thumb/'+xjson.data[i].u+'" /></a></li>';
 }
 $('<ul id="'+xid+'" class="gal flex-images">'+xhtml+'</ul>').insertAfter('[data-id="'+xid+'"]');
 lazyload_prepare();
@@ -2458,7 +2567,7 @@ xhtml = xhtml + '<tr><td width="60"><b>'+gal_share_network_names[i]+'</b></td><t
 </td></tr>';
 }
 xhtml = xhtml + '<tr>\
-<tr><td><b>Copy link</b></td><td><input type="text" value="'+gal_domain+'album.php?aid='+gal_vars_aid+'&pic='+xpic+'" /></td></tr>\
+<tr><td><b>Copy link</b></td><td><input type="text" value="'+gal_domain+'u/'+xpic+'" /></td></tr>\
 </tr></table>';
 
 phpl_alert(xhtml, 'Share on Social Media');

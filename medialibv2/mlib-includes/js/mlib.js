@@ -7,6 +7,7 @@ mlib_vars_tab3_text = 'Insert from URL';
 mlib_vars_h3_text = 'Embed from URL or web address';
 mlib_vars_insert_button_text = 'Insert';
 mlib_vars_manage_spots_text = 'Manage photo spots';
+mlib_vars_select_multiple = 'no';
 
 function mlib_refresh(){
 var ipp = $('#mlib-lightbox').attr('mlib-ipp');
@@ -29,8 +30,8 @@ $( window ).resize(function() {
 mlib_adjust_iframe();
 });
 
-$('body').on('change', '.mlib_ipp', function(){
-var ipp = $(this).val();
+$('body').on('change', '.mlib_ipp, #mlib-sortby', function(){
+var ipp = $('#mlib-lightbox .mlib_ipp').val();
 var xpage = $('#mlib-lightbox').attr('mlib-page');
 mlib_load_gallery_data_advanced(xpage, ipp);
 });
@@ -48,11 +49,14 @@ alert('Some error occured, details could not be updated!!'+data);
 $('.mlib-single-edit [name="title"]').val(xjson.title);
 $('.mlib-single-edit [name="caption"]').val(xjson.caption);
 $('.mlib-single-edit [name="tags"]').val(xjson.tags);
+$('.mlib-single-edit [name="emails"]').val(xjson.emails);
 
 // update in actual thumbnail
 $('.mlib-selected-thumb[mlib-id="'+xjson.mlibid+'"]').attr('mlib-title', xjson.title);
 $('.mlib-selected-thumb[mlib-id="'+xjson.mlibid+'"]').attr('mlib-caption', xjson.caption);
 $('.mlib-selected-thumb[mlib-id="'+xjson.mlibid+'"]').attr('mlib-tags', xjson.tags);
+$('.mlib-selected-thumb[mlib-id="'+xjson.mlibid+'"]').attr('mlib-emails', xjson.emails);
+$('.mlib-selected-thumb[mlib-id="'+xjson.mlibid+'"]').attr('mlib-access', xjson.access);
 
 alert('Updated successfully!');
 }
@@ -234,10 +238,9 @@ $('.mlib-how-many').html('<b style="color:red;">'+tot+' items selected.</b> <spa
 
 });
 
-
 $('body').on('mousedown', '.mlib-thumbs', function (e){
 ctrlKeyHeld = e.ctrlKey;
-if(ctrlKeyHeld){
+if($('#multi-select-thumbs').prop('checked')==true || ctrlKeyHeld==true){
 if($(this).find('input[checked="checked"]').length!=0){
 $(this).removeClass('mlib-selected-thumb');
 $(this).find('[type="checkbox"]').removeAttr('checked');
@@ -253,12 +256,20 @@ $(this).find('[type="checkbox"]').attr('checked', 'checked');
 }
 
 var tot = $('.mlib-selected-thumb').length;
-$('.mlib-how-many').html('<b style="color:red;">'+tot+' items selected.</b> <span class="hidden-text">Hold CTRL then click to select multiple items OR Press SHIFT + A to select all.</span><div class="mlib-how-many-text"><div style="float: right; margin: 10px 0px;" class="mlib-delete-all">delete</div> <div style="float: right; margin: 10px;" class="mlib-button mlib-insert-button">'+mlib_vars_insert_button_text+'</div></div>');
+
+if(mlib_vars_select_multiple=='no'){var mchk_text = '';} else {var mchk_text = 'checked="checked"';}
+$('.mlib-how-many').html('<span class="hidden-text"> &nbsp; <input onclick="mlib_mchk_text_val()" type="checkbox" '+mchk_text+' id="multi-select-thumbs" /> select multiple</span><b class="mlib-sel-text">'+tot+' items selected.</b><div class="mlib-how-many-text"><div style="float: right; margin: 10px 0px;" class="mlib-delete-all">delete</div> <div style="float: right; margin: 10px;" class="mlib-button mlib-insert-button">'+mlib_vars_insert_button_text+'</div></div>');
 
 var mhtml = '<form action="" method="post" name="mlib-single-form" class="mlib-single-edit">\
-<a href="javascript:void(0)" class="mlib-album-cover">set as album cover</a>\
-<label><span>'+mlib_size($(this).attr('mlib-size'))+', '+$(this).attr('mlib-type')+' file</span></label>\
+<div style="text-align:center;padding-top:10px;"><a href="javascript:void(0)" class="btn btn-xs btn-info mlib-album-cover">SET COVER</a> <a href="javascript:void(0)" class="btn btn-xs btn-warning" onclick="mlib_change_album()">MOVE TO</a> <a href="javascript:void(0)" class="btn btn-xs btn-success" onclick="mlib_rotate_photo()">ROTATE</a></div>\
+<label><span>'+mlib_size($(this).attr('mlib-size'), 2)+', '+$(this).attr('mlib-type')+' file</span></label>\
 <label><span>Uploaded on '+$(this).attr('mlib-time')+'</span></label>\
+<label>\
+<span>Privacy &nbsp; - &nbsp; <input type="radio" onchange="mlib_switch_access(this)" id="optionpublic" name="access" value="public"> Public &nbsp; \
+<input type="radio" onchange="mlib_switch_access(this)" id="optionprivate" name="access" value="private"> Private</span>\
+</label>\
+<select name="maillist[]" multiple id="maillist"></select>\
+\
 <label>\
 <span>File URL</span>\
 <input type="text" readonly="readonly" value="'+main_domain+'full/'+$(this).attr('mlib-url')+'">\
@@ -284,6 +295,13 @@ var mhtml = '<form action="" method="post" name="mlib-single-form" class="mlib-s
 </form>';
 
 $('.mlib-item-properties').html(mhtml);
+$('#option'+$(this).attr('mlib-access')).prop('checked', true);
+if($(this).attr('mlib-access') == 'private'){
+$('.mlib-single-edit .ms-options-wrap').show();
+} else {
+$('.mlib-single-edit .ms-options-wrap').hide();
+}
+mlib_photo_access($(this).attr('mlib-id'));
 });
 
 
@@ -295,12 +313,114 @@ $('.mlib-left li').removeClass('mlib-li-active');
 $(this).addClass('mlib-li-active');
 $('.mlib-data').hide();
 $('#'+cid).show();
-//mlib_adjust_iframe();
+mlib_menu_toggle();
 });
 
 });
 
 
+function mlib_mchk_text_val(){
+if($('#multi-select-thumbs').prop("checked")==true){
+mlib_vars_select_multiple = 'yes';
+} else {
+mlib_vars_select_multiple = 'no';
+}
+
+}
+
+function mlib_strto_option(xstr){
+
+var xarr = xstr.split(',');
+var out = '';
+for(var i=0;i<xarr.length;i++){
+var eid = $.trim(xarr[i]);
+out = out + '<option value="'+eid+'">'+eid+'</option>';
+}
+
+return out;
+}
+
+/* php rotates counterclockwise, but css does clockwise */
+function mlib_rotate_photo(){
+var xid = $('.mlib-single-edit [name="mlibid"]').val();
+var thumb = $('[mlib-id="'+xid+'"]').attr('mlib-thumb');
+var xhtml = '\
+<p style="color:red;"><b>WARNING!</b> Rotating this image will also remove the camera and other related information from photo. It is always good to delete the incorrect photo and reupload the correctly rotated photo.</p><br />\
+<p>Once done, viewers need to clear cache to see the changes.</p><br /><h5>Choose degress:</h5>\
+<div class="rotate-canvas"><img id="rotate-preview-img" src="'+main_domain+'thumb/'+thumb+'"></div>\
+<div class="rotate-form"><br />\
+<input onchange="mlib_rotate_preview(this.value)" checked type="radio" name="deg" value="0"> 0 degrees<br />\
+<input onchange="mlib_rotate_preview(this.value)" type="radio" name="deg" value="90"> 90 degrees<br />\
+<input onchange="mlib_rotate_preview(this.value)" type="radio" name="deg" value="180"> 180 degrees<br />\
+<input onchange="mlib_rotate_preview(this.value)" type="radio" name="deg" value="270"> 270 degrees<br />\
+</div>\
+<div style="clear:both;"></div>\
+<div class="mlib-rotate-result"></div>'; 
+
+var xfooter ='<div class="phpl-alert-btn-danger phpl-alert-close">Close</div><div onclick="mlib_apply_rotate()" class="phpl-alert-btn-success">Apply</div>';
+
+phpl_alert(xhtml, 'Rotate photo by degress', xfooter);
+}
+
+function mlib_apply_rotate(){
+var xdeg = $('.rotate-form [name="deg"]:checked').val();
+var xid = $('.mlib-single-edit [name="mlibid"]').val();
+var thumb = $('[mlib-id="'+xid+'"]').attr('mlib-thumb');
+var url = $('[mlib-id="'+xid+'"]').attr('mlib-url');
+$('.phpl-alert-box').addClass('phpl-alert-loading');
+
+$.post( mlib_domain+"mlib.php", {func:'mlib_photo_rotate', deg:xdeg, id:xid, u:url}, function(data) {
+$('.phpl-alert-box').removeClass('phpl-alert-loading');
+var xt = new Date().getTime();
+phpl_close_alert();
+phpl_alert('Image rotation successful!');
+
+mlib_load_gallery_data_auto();
+});
+
+}
+
+
+function mlib_load_gallery_data_auto(){
+var xpage = $('#mlib-lightbox').attr('mlib-page');
+var ipp = $('#mlib-lightbox').attr('mlib-ipp');
+mlib_load_gallery_data_advanced(xpage, ipp);
+}
+
+function mlib_rotate_preview(xdeg){
+$('#rotate-preview-img').css('transform', 'rotate('+xdeg+'deg)');
+}
+
+function mlib_photo_access(pid){
+$.post( mlib_domain+"mlib.php", {func:'mlib_photo_access', aid:pid}, function( data ) {
+$('#maillist').html(data);
+$('#maillist').multiselect({
+    columns: 1,
+    placeholder: 'Select users',
+    search: true,
+    selectAll: true
+});
+});
+}
+
+
+function mlib_switch_access(xthis){
+
+var xval = $(xthis).val();
+
+if(xval=='public'){
+$('#emails').hide();
+} else {
+$('#emails').show();
+}
+
+}
+
+
+function mlib_change_album(){
+var xhtml = '<select class="form-control" name="album-id" id="album-id">'+$('#album-ids').html()+'</select><br><p style="color:red;"><b>NOTE:</b>All selected files will be moved to the above selected folder!</p>';
+phpl_alert(xhtml, 'Choose new album...', '<div class="phpl-alert-btn-danger phpl-alert-close">Close</div><div onclick="mlib_move_ajax()" class="phpl-alert-btn-success">Move</div>');
+}
 
 function mlib_url_upload(){
 var url = $('.mlib-urls textarea[name="urls"]').val();
@@ -329,8 +449,9 @@ mlib_load_gallery_data_advanced(1, 30);
 }
 
 function mlib_load_gallery_data_advanced(xpage, xipp){
+var mlib_sortby = $('#mlib-sortby').val();
 var fid = $('.mlib-main').attr('id');
-$.post( mlib_domain+"mlib.php?fid="+fid, {func:'load_thumbs', page:xpage, ipp:xipp}, function(data){
+$.post( mlib_domain+"mlib.php?fid="+fid, {func:'load_thumbs', page:xpage, ipp:xipp, sort:mlib_sortby}, function(data){
 mlib_create_display(data);
 });
 }
@@ -340,13 +461,13 @@ var xdata = jQuery.parseJSON(data);
 var xstr = '';
 for(var i=0;i<parseInt(xdata.total);++i){
 
-xstr = xstr+'<div mlib-size="'+xdata[i].size+'" mlib-id="'+xdata[i].id+'" mlib-type="'+xdata[i].type+'" mlib-time="'+xdata[i].newtime+'" mlib-title="'+xdata[i].title+'" mlib-caption="'+xdata[i].caption+'" mlib-url="'+xdata[i].url+'" mlib-thumb="'+xdata[i].thumb+'"  mlib-tags="'+xdata[i].tags+'" class="mlib-thumbs" style="background-image:url(\''+main_domain+'thumb/'+xdata[i].thumb+'\')">\
+xstr = xstr+'<div mlib-access="'+xdata[i].access+'" mlib-size="'+xdata[i].size+'" mlib-id="'+xdata[i].id+'" mlib-type="'+xdata[i].type+'" mlib-time="'+xdata[i].newtime+'" mlib-title="'+xdata[i].title+'" mlib-caption="'+xdata[i].caption+'" mlib-url="'+xdata[i].url+'" mlib-thumb="'+xdata[i].thumb+'"  mlib-tags="'+xdata[i].tags+'" class="mlib-thumbs" style="background-image:url(\''+main_domain+'thumb/'+xdata[i].thumb+'\')">\
 <input type="checkbox" name="img['+xdata[i].id+']">\
 <div class="mlib-checkbox"></div></div>';
 
 }
 
-var load_more = '<div class="mlib-load-more"><div style="float:right;"> Items per page : &nbsp; <select name="mlib_ipp" class="mlib_ipp"><option>30</option><option>50</option><option>100</option><option>200</option><option>500</option><option>1000</option></select></div><div class="mlib-linked-pages"></div></div>';
+var load_more = '<div class="mlib-load-more"><div class="mlib-load-ipp"><select name="mlib_sortby" id="mlib-sortby"><option disabled>-- SORT BY --</option><option value="time-DESC">Uploaded (DESC)</option><option value="title-ASC">Title (ASC)</option><option value="size-DESC">Filesize (DESC)</option><option value="access-ASC">Private First</option></select> <select name="mlib_ipp" class="mlib_ipp"><option disabled> -- Items per page -- </option><option>30</option><option>50</option><option>100</option><option>200</option><option>500</option><option>1000</option></select></div><div class="mlib-linked-pages"></div></div>';
 
 if(xdata.total==xdata.ipp){
 var load_more_bottom = load_more;
@@ -358,6 +479,7 @@ xstr = '<p style="padding:0 10px;"><b>Sorry!</b> There are no images to show.</p
 
 $( ".mlib-display-canvas" ).html( load_more+xstr+load_more_bottom );
 $('.mlib-load-more .mlib_ipp').val(xdata.ipp);
+$('.mlib-load-more #mlib-sortby').val(xdata.sort);
 //$( ".mlib-display-canvas" ).prepend( load_more );
 //$( ".mlib-display-canvas" ).after( load_more );
 var mlib_ipp = $('.mlib-load-more .mlib_ipp').val();
@@ -401,11 +523,48 @@ alert(data);
 $(".mlib-selected-thumb").addClass('mlib-danger').fadeOut("slow", function(){
 $(this).remove();
 $('#mlibdelform').remove();
-mlib_load_gallery_data();
+mlib_load_gallery_data_auto();
 });
 
 });
 }
+
+
+function mlib_move_ajaxx(){
+$.post( mlib_domain+"mlib.php", {func:'mlib_change_album', xto:$('#album-id').val(), xfrom:$('.mlib-main').attr('id'), xphoto:$('.mlib-single-edit input[name="mlibid"]').val()}, function( data ) {
+phpl_close_alert();
+mlib_load_gallery_data_auto();
+});
+}
+
+
+function mlib_move_ajax(){
+var mhtml = '';
+// create a hidden for containing all selected images
+$(".mlib-selected-thumb").each(function(index){
+var mid = $(this).attr('mlib-id');
+mhtml = mhtml+'<input type="hidden" name="mlibid[]" value="'+mid+'" />';
+});
+// $('.mlib-single-edit input[name="mlibid"]').val()
+var xhtml = '<form name="mlibmovform" id="mlibmovform" action="" method="post">\
+<input type="hidden" name="func" value="mlib_move_items" />\
+<input type="hidden" name="xto" value="'+$('#album-id').val()+'" />\
+<input type="hidden" name="xfrom" value="'+$('.mlib-main').attr('id')+'" />\
+'+mhtml+'</form>';
+$('body').append(xhtml);
+
+$.post( mlib_domain+"mlib.php", $('form#mlibmovform').serialize(), function( data ) {
+
+$(".mlib-selected-thumb").addClass('mlib-danger').fadeOut("slow", function(){
+$(this).remove();
+$('#mlibmovform').remove();
+mlib_load_gallery_data_auto();
+phpl_close_alert();
+});
+
+});
+}
+
 
 
 function load_import_options(){
@@ -452,11 +611,11 @@ var xhtml = '<style type="text/css">.dropzone .dz-preview .dz-error-message{righ
 '+admintab+'\
 <li id="mlib-url-li">'+mlib_vars_tab3_text+'</li>\
 </ul><div class="mlib-right"><div class="mlib-contents"><div class="mlib-data" style="display:block;" id="mlib-upload-tab">\
-<div class="mlib-top"><div class="mlib-head">'+mlib_vars_h1_text+'</div><div class="mlib-close">X</div></div>\
+<div class="mlib-top"><div class="mlib-head"><div onclick="mlib_menu_toggle()" class="mlib-menu-toggle"></div><div class="mlib-top-text">'+mlib_vars_h1_text+'</div></div><div class="mlib-close">X</div></div>\
 <form action="mlib-upload.php" class="dropzone">\
 <div class="fallback"><div class="mlib_fallback_iframe"><iframe id="mlib_fallback_iframe" src="'+mlib_domain+'mlib-iframe.php" onload="javascript:mlib_adjust_iframe()" frameborder="0" width="100%"></iframe></div>\
 </div></form></div><div class="mlib-data" id="mlib-media-tab">\
-<div class="mlib-top"><div class="mlib-head">'+mlib_vars_h2_text+'</div><div title="Refresh" onclick="mlib_refresh()" class="mlib-refresh">🔄</div><div class="mlib-close">X</div></div>\
+<div class="mlib-top"><div class="mlib-head"><div onclick="mlib_menu_toggle()" class="mlib-menu-toggle"></div><div class="mlib-top-text">'+mlib_vars_h2_text+'</div><div onclick="mlib_toggle_fileinfo()" class="mlib-toggle-fileinfo"></div></div><div class="mlib-close">X</div></div>\
 <div class="mlib-bottom"><div class="mlib-how-many"><span class="hidden-text">Hold CTRL then click to select multiple items OR Press SHIFT + A to select all.</span></div>\
 </div><div class="mlib-display-canvas">\
 <form name="myform" action="" method="post">\
@@ -465,7 +624,7 @@ var xhtml = '<style type="text/css">.dropzone .dz-preview .dz-error-message{righ
 </form></div><div class="mlib-item-properties"></div>\
 </div><div class="mlib-data" id="mlib-import-tab">'+adminbox+'</div>\
 <div class="mlib-data" id="mlib-url-tab">\
-<div class="mlib-top"><div class="mlib-head">'+mlib_vars_h3_text+'</div><div class="mlib-close">X</div></div>\
+<div class="mlib-top"><div class="mlib-head"><div onclick="mlib_menu_toggle()" class="mlib-menu-toggle"></div><div class="mlib-top-text">'+mlib_vars_h3_text+'</div></div><div class="mlib-close">X</div></div>\
 <div class="mlib-urls">\
 <form onsubmit="return mlib_url_upload()" action="mlib.php" id="form-url-upload" name="xyz" method="post">\
 <p>Enter the URLs to download. You can enter multiple URLs, one per line. Titles and captions will be assigned automatically. You can edit them later from media library.</p>\
@@ -510,7 +669,15 @@ var myDropzone = new Dropzone(".dropzone",{
 	acceptedFiles:'jpg,png,gif,jpeg,txt,zip,rar,doc,docx,ppt,pptx,xls,xlsx,csv,tar,gz', 
 	url: mlib_domain+"mlib-upload.php?fid="+fid});
  } else {
+if(mlib_upload_resolution==''){
 var myDropzone = new Dropzone(".dropzone",{dictDefaultMessage:"", maxFilesize:xmaxFilesize, parallelUploads:xparallelUploads, thumbnailWidth:xthumbnailWidth, thumbnailHeight:xthumbnailHeight, acceptedFiles:mlib_upl_allowed, url: mlib_domain+"mlib-upload.php?fid="+fid});
+} else {
+if(mlib_upload_resolution=='4k'){var resval = 3840;}
+if(mlib_upload_resolution=='8k'){var resval = 7680;}
+if(mlib_upload_resolution=='16k'){var resval = 15360;}
+var myDropzone = new Dropzone(".dropzone",{timeout: 0, dictDefaultMessage:"", resizeWidth: resval, resizeHeight: resval, resizeMethod: 'contain', resizeQuality: 0.8, maxFilesize:xmaxFilesize, parallelUploads:xparallelUploads, thumbnailWidth:xthumbnailWidth, thumbnailHeight:xthumbnailHeight, acceptedFiles:mlib_upl_allowed, url: mlib_domain+"mlib-upload.php?fid="+fid});
+}
+
 }
 myDropzone.on("queuecomplete", function(x) {
 mlib_thumbs_after_upload();
@@ -535,7 +702,9 @@ outString.substring(idx + inToReplace.length);
 
 
 
-
+function mlib_toggle_fileinfo(){
+$('.mlib-item-properties').toggle();
+}
 
 
 
@@ -617,8 +786,13 @@ obj.style.height = (obj.contentWindow.document.body.scrollHeight+20) + 'px';
 }
 }
 
+function mlib_menu_toggle(){
+$('.mlib-left').toggleClass('mlib-menu-left-hide');
+}
+
 function mlib_thumbs_after_upload(){
 $('#mlib-media-li').trigger('click');
+$('.mlib-left').removeClass('mlib-menu-left-hide');
 $('.mlib-display-canvas').html('');
 mlib_load_gallery_data();
 }

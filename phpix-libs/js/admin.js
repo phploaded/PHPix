@@ -1,7 +1,9 @@
+gal_rrcop_quality = 0.4;
+
 jQuery(document).ready(function(){
 
 /* delaying is necessary for onload click */
-setTimeout("radioToggle()", 100);
+setTimeout("radioToggle()", 200);
 
 
 /* click radio buttons to show or hide their collapse divs */
@@ -19,25 +21,34 @@ document.location.href = xurl;
 
 /* set album cover */
 jQuery('body').on('click', '.mlib-album-cover', function(){
+var xfooter = '<div class="phpl-alert-btn-danger phpl-alert-close">Cancel</div><div onclick="mlib_cover_UI(\'full\')" class="phpl-alert-btn-info">Original</div><div onclick="mlib_cover_UI(\'hd\')" class="phpl-alert-btn-warning">HD</div><div onclick="mlib_cover_UI(\'fhd\')" class="phpl-alert-btn-success">Full HD</div>';
+var xhtml = 'Original image may be very big and time consuming for slow internet connection.<br><br> Which version of photo to open in crop mode for setting thumbnail?';
+phpl_alert(xhtml, 'Choose Quality', xfooter);
+
+});
+
+});
+
+function mlib_cover_UI(xqual){
+$('.phpl-alert-box').addClass('phpl-alert-loading');
 var photoID = $('.mlib-single-edit [name="mlibid"]').attr('value');
 var photoURL = $('[mlib-id="'+photoID+'"]').attr('mlib-url');
-//var xxaid = $('#mlib-lightbox').attr('mlib-return-to');
-//var xaid = xxaid.replace('#div-', '');
-$('body').append('<div class="mlib-crop-ctr"><div class="mlib-crop-bg"></div><div class="mlib-crop-area"><img id="mlib-crop" onload="mlib_init_rcrop()" src="'+main_domain+'full/'+photoURL+'"></div><div class="mlib-crop-buttons"><a href="#" onclick="mlib_rcrop_apply()" class="mlib-button mlib-button-blue">Apply</a> <a href="#" onclick="mlib_rcrop_close()" class="mlib-button-red">Cancel</a></div></div>');
+var xpURL = main_domain+'phpix-download.php?q='+xqual+'&f='+photoURL;
+$.get( xpURL , function() {
+phpl_close_alert();
+$('body').append('<div class="mlib-crop-ctr"><div class="mlib-crop-bg"></div><div class="mlib-crop-area"><img id="mlib-crop" onload="mlib_init_rcrop()" src="'+main_domain+''+xqual+'/'+photoURL+'"></div><div class="mlib-crop-buttons"><a href="#" onclick="mlib_rcrop_apply()" class="mlib-button mlib-button-blue">Apply</a> <a href="#" onclick="mlib_rcrop_close()" class="mlib-button-red">Cancel</a></div></div>');
 $('#wrapper, .mlib-main').addClass('blur');
 });
-
-});
-
+}
 
 function mlib_rcrop_apply(){
-var srcOriginal = $('#mlib-crop').rcrop('getDataURL');
+var srcOriginal = $('#mlib-crop').rcrop('getDataURL', 750, 750);
 var xxaid = $('#mlib-lightbox').attr('mlib-return-to');
 var xaid = xxaid.replace('#div-', '');
 $('.mlib-crop-buttons').hide();
 $.post( mlib_domain+"mlib.php", {func:'mlib_set_cover', aid:xaid, photo:srcOriginal} , function(datax) {
 d = new Date();
-$('#row-'+xaid+' .album-thumb').css('background-image', 'url(\''+main_domain+'cover/'+datax+'?t='+d.getTime()+'\')');
+$('#row-'+xaid+' .album-thumb').attr('src', main_domain+'cover/'+datax+'?t='+d.getTime());
 alert('Cover changed successfully');
 $('.mlib-crop-buttons').show();
 mlib_rcrop_close();
@@ -105,11 +116,27 @@ mlib_vars_insert_button_text = 'Close';
 
 /* toggles hidden radio div */
 function radioToggle(){
+
 jQuery('.radiobtn').each(function(){
-if(jQuery(this).is(':checked')){
+if(jQuery(this).prop('checked')==true){
 jQuery(this).closest('.radiotoggle').find('.collapse').show();
 } else {
 jQuery(this).closest('.radiotoggle').find('.collapse').hide();
 }
 });
 }
+
+function toggle_all_checkboxes(xthis){
+
+var xname = $(xthis).attr('data-chk');
+
+if($(xthis).is(':checked')){
+$('[type="checkbox"][name="'+xname+'"]').prop('checked', true);
+} else {
+$('[type="checkbox"][name="'+xname+'"]').prop('checked', false);
+}
+
+}
+
+
+

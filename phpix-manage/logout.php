@@ -1,8 +1,9 @@
 <?php 
 
-unset($_SESSION[$website_name]);
+unset($_SESSION['PHPix']);
+unset($_SESSION['phpixuser']);
 
 ?><script>
 localStorage.clear();
-document.location.href='<?php echo $admin_url ?>login';
+document.location.href='<?php echo $domain.''.$albumFILE; ?>';
 </script>

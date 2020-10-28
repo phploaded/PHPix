@@ -6,6 +6,7 @@ $descr = clean_text($_POST['descr']);
 $descr_length = strlen($descr);
 $access = clean_text($_POST['access']);
 $emails = clean_emails($_POST['emails']);
+$parent = $_POST['parent'];
 
 if($title!=''){
 
@@ -28,12 +29,17 @@ if($data['total']!=0){
 notify('<b>Error :</b>'.$inserted.' Your album <b>'.$title.'</b> could not be created because you already have another album with very similar name. Please retry after editing the title.', 'newalbum', 'danger');
 } else {
 	
-if($access=='private'){$access=$emails;}
-	
 mysqli_query($con, "INSERT INTO `".$prefix."albums` 
-(`id`, `slug`, `access`, `title`, `descr`, `created`, `updated`, `count`) VALUES 
-('$new_id', '$slugged', '$access', '$title', '$descr', '$time', '$time', '0')");
+(`id`, `slug`, `access`, `title`, `descr`, `created`, `updated`, `count`, `parent`, `uid`) VALUES 
+('$new_id', '$slugged', '$access', '$title', '$descr', '$time', '$time', '0', '$parent', '$phpix_user')");
 notify('<b>Success :</b> Your album <b>'.$title.'</b> was created successfully.', 'newalbum', 'success');
+
+$zmails = $_POST['maillist']; 
+if(count($_POST['maillist'])>0){
+foreach($zmails as $key => $val){
+mysqli_query($con, "INSERT INTO `".$prefix."access` (`id`, `uid`, `aid`) VALUES (NULL, '$val', '".$new_id."')");
+}
+}
 }
 
 }
@@ -44,10 +50,15 @@ notify('<b>Success :</b> Your album <b>'.$title.'</b> was created successfully.'
 
 }
 
+$mdata = mysqli_query($con, "SELECT `email` FROM `".$prefix."users`");
 
+$out = '';
+while($xrow = mysqli_fetch_assoc($mdata)){
+$out = $out.'<option value="'.$xrow['email'].'">'.$xrow['email'].'</option>';
+}
 
  ?>
-<div class="container">
+<div class="row">
 
 <div class="col-xs-12 col-md-2"></div>
 <div class="col-xs-12 col-md-8">
@@ -56,21 +67,6 @@ notify('<b>Success :</b> Your album <b>'.$title.'</b> was created successfully.'
   <div class="panel panel-primary">
     <div class="panel-heading text-center">Add Album</div>
 	<div class="panel-body">
-    <div class="form-group">
-      <label for="title" class="col-lg-2 control-label">Title</label>
-      <div class="col-lg-10">
-        <input value="<?php echo $title; ?>" type="text" name="title" class="form-control" id="title" placeholder="Title">
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label for="descr" class="col-lg-2 control-label">Description</label>
-      <div class="col-lg-10">
-        <textarea name="descr" class="form-control" rows="3" id="descr"><?php echo $descr; ?></textarea>
-        <span class="help-block">Maximum 5000 charectors allowed. Non english charectors may get converted to garbage.</span>
-      </div>
-    </div>
-	
     <div class="form-group">
       <label class="col-lg-2 control-label">Access</label>
       <div class="col-lg-10">
@@ -90,15 +86,52 @@ notify('<b>Success :</b> Your album <b>'.$title.'</b> was created successfully.'
 		  </label>
 		  
 			<div id="aids" class="collapse">
-			<span class="help-block">Enter the email IDs of people allowed to view this album. IDs should be separated by space or comma.</span>
-			<textarea name="emails" class="form-control" rows="3" id="emails"><?php echo $emails; ?></textarea>
+			<span class="help-block">Enter the email IDs of people allowed to view this album.</span>
+			<select multiple name="maillist[]" id="maillist"><?php echo $out; ?></select>
 			</div>
         </div>
       </div>
     </div>
+    <div class="form-group">
+      <label for="title" class="col-lg-2 control-label">Title</label>
+      <div class="col-lg-10">
+        <input value="<?php echo $title; ?>" type="text" name="title" class="form-control" id="title" placeholder="Title">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="parent" class="col-lg-2 control-label">Parent</label>
+      <div class="col-lg-10">
+<select name="parent" id="parent" class="form-control">
+<option value="">NO PARENT (TOP FOLDER)</option>
+<?php 
+
+$ydata = mysqli_query($con, "SELECT * FROM `".$prefix."albums`");
+
+while($xrow = mysqli_fetch_assoc($ydata)){
+
+if($xrow['parent']==''){$xtype='top folder';} else {$xtype='sub folder';}
+
+echo'<option value="'.$xrow['id'].'">'.$xrow['title'].' ('.$xtype.', '.$xrow['count'].' Photos)</option>';
+
+}
+
+
+
+
+ ?>
+</select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="descr" class="col-lg-2 control-label">Description</label>
+      <div class="col-lg-10">
+        <textarea name="descr" class="form-control" rows="3" id="descr"><?php echo $descr; ?></textarea>
+        <span class="help-block">Maximum 5000 charectors allowed. Non english charectors may get converted to garbage.</span>
+      </div>
+    </div>
 	
-
-
     <div class="form-group">
       <div class="col-lg-10 col-lg-offset-2">
         <button type="submit" class="btn btn-primary">Create Album</button>
@@ -114,5 +147,11 @@ notify('<b>Success :</b> Your album <b>'.$title.'</b> was created successfully.'
 <script>
 jQuery(document).ready(function(){
 jQuery('#option<?php echo $_POST[access]; ?>').trigger('click');
+$('#maillist').multiselect({
+    columns: 1,
+    placeholder: 'Select users',
+    search: true,
+    selectAll: true
+});
 });
 </script>

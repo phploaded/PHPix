@@ -18,13 +18,13 @@ function nextitem($item){
 global $stable;
 global $data;
 $found = 0;
-$i=$item+0.1;
+$i=$item+0.01;
 
 	while($i <= $data['latest']){
 	if(in_array((string)$i, $stable) && $found==0){
 	$found = $i;
 	}
-	$i = $i + 0.1;
+	$i = $i + 0.01;
 	}
 
 if($found!=''){
@@ -50,6 +50,9 @@ echo '<h3><b class="text-success">New updates found!</b> PHPix '.$data['latest']
 echo '<p><button onclick="start_update(\''.$next.'\')" class="btn btn-lg btn-success">UPDATE NOW</button></p>
 <p>You can update PHPix to '.$next.' (latest version) now.</p>';
 }
+
+echo'<h3>Whats new!</h3>
+<p>'.$data['info'].'</p>';
 }
 
 

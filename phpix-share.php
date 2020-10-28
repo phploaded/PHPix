@@ -1,7 +1,6 @@
 <?php 
-include('config.php');
-error_reporting(E_ALL);
-//print_r($_GET);
+include('phpix-config.php');
+
 
 $type = $_GET['type'];
 $quality = $_GET['q'];
@@ -26,7 +25,10 @@ $location = 'https://pinterest.com/pin/create/button/?url=&media='.$url.'&descri
 }
 
 if($type=='wh'){
-$location = 'https://api.whatsapp.com/send?text='.urlencode($url);
+$zurl = $gallery_domain.'phpix-download.php?q=qhd&f='.$_GET['pic'];
+$x = file_get_contents($zurl);
+$wh_url = urlencode($gallery_domain.'u/'.$_GET['pic']);
+$location = 'https://api.whatsapp.com/send?text='.$wh_url;
 }
 
 if($location!=''){

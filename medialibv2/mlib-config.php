@@ -16,7 +16,9 @@ $mlib_db = $con;
 define('MLIBPREFIX', $prefix);
 
 /* If you want to use it for multiple people, then you must fetch the user id in your user system instead of 1. If you are using this plugin just for 1 admin, there is no need to do anything */
-$mlib_current_user = 1; 
+
+if($_SESSION['phpixuser']!=''){ $mlib_current_user = $_SESSION['phpixuser']; } 
+else { $mlib_current_user = 1; } 
 
 /* image and file extensions to be allowed. If any extention is not list here, it will not get uploaded even if you allow via javascript in webpages. */
 $mlib_allowed_images = array("jpg", "jpeg", "png", "gif");

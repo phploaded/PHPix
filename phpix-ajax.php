@@ -25,14 +25,12 @@ $save = file_put_contents(
 $response
 );
 
-
-
 $size = filesize('temp/'.$file);
 $sizeKB = round(($size/1024), 2);
 
 if($sizeKB<0.5){
-echo'<b class="text-danger">Download Failed. Invalid response received.</b><br /><br />
-<button class="btn btn-medium btn-danger">Finish Update</button>';
+echo'<p><b>Error for : </b>'.$software_zipURL.''.$file.'</p><b class="text-danger">Download Failed. Invalid response received. Total update size = '.$sizeKB.' Kb</b><br /><br />
+<a href="phpix-manage.php?page=update" class="btn btn-medium btn-danger">Finish Update</a>';
 @unlink('temp/'.$file);
 } else {
 echo'<b class="text-success">Download Completed. Total update size = '.$sizeKB.' Kb</b>
@@ -224,7 +222,7 @@ $i = 0;
 
 echo'<div class="album-bar-ctr">
 <div class="album-bar">
-<a href="#" onclick="album_toggle_sidebar()" class="albtn-menu"></a>
+<a href="javascript:void(0)" onclick="album_toggle_sidebar()" class="albtn-menu"></a>
 <span>'.$album['title'].'</span>
 <ul class="album-buttons">
 <li onclick="toggleFullscreen(\'#flscrn\')" class="albtn-fullscreen"></li>
@@ -240,12 +238,31 @@ echo'<div class="album-bar-ctr">
 <i>Contains '.$album['count'].' Photos</i>,
 <i class="album-created">Created on '.date($date_format, $album['created']).'</i>,
 <i class="album-updated">Last updated on '.date($date_format, $album['updated']).'</i>
-</div>
+</div>';
 
-<div class="gal-ctr">
+gal_display_albums($_GET['aid']);
+
+echo'<div class="gal-ctr">
 <div class="notify"></div>';
 
-$data = mysqli_query($con, "SELECT * FROM `".$prefix."uploads` WHERE `folder`='".$_GET['aid']."'");
+if($_SESSION['PHPix']!=''){
+$sql = "SELECT * FROM `".$prefix."uploads` WHERE (`access`='public' OR `access`='private') AND `folder`='".$_GET['aid']."'";
+} elseif($_SESSION['phpixuser']==''){
+$sql = "SELECT * FROM `".$prefix."uploads` WHERE `access`='public' AND `folder`='".$_GET['aid']."'";
+} else {
+$tql = mysqli_query($con, "SELECT * FROM `".$prefix."access` WHERE `type`='photo' AND `uid`='".$_SESSION['phpixuser']."'");
+$nsql = '';
+while($row = mysqli_fetch_assoc($tql)){
+$nsql = $nsql." OR `id`='".$row['aid']."'";
+}
+
+
+$sql = "SELECT * FROM `".$prefix."uploads` WHERE".$esql." (`access`='public'".$nsql.") AND `folder`='".$_GET['aid']."'";
+}
+
+
+
+$data = mysqli_query($con, $sql);
 
 while($row = mysqli_fetch_assoc($data))
 {    
@@ -257,9 +274,10 @@ list($thumb_width, $thumb_height) = getimagesize($thumb);
 $oldthumb = $oldthumb.'<li class="item" data-w="'.$thumb_width.'" data-h="'.$thumb_height.'"><a href="'.$gallery_domain.''.$quality.'/'.$row['url'].'"><img src="'.$gallery_domain.''.$thumb.'"></a></li>';
 $json['data'][$i]['w'] = $thumb_width;
 $json['data'][$i]['u'] = $row['thumb'];
+$json['data'][$i]['a'] = $row['access'];
 ++$i;
 } else {
-$newthumb = $newthumb.'<li data-url="'.$row['url'].'">'.$row['url'].'</li>';
+$newthumb = $newthumb.'<li data-access="'.$row['access'].'" data-url="'.$row['url'].'">'.$row['url'].'</li>';
 }
 }
 $json['t']=$i;
@@ -268,7 +286,7 @@ $json['h']=$default_gallery_settings['thumb_height'];
 echo'<div data-id="gallery" class="gal_data">'.json_encode($json).'</div>
 
 <ul id="new_thumbs">'.$newthumb.'</ul>
-</div>';
+</div><script>gal_vars_parentFolder = \''.$album['parent'].'\';</script>';
 
 }
 

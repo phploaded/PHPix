@@ -1,4 +1,5 @@
 <?php 
+admin_only();
 $type = $_GET['id'];
 ?>
 
@@ -56,16 +57,16 @@ echo'<div class="alert alert-dismissible alert-success">
 </div>
 
 
-
-<table class="table table-bordered table-striped">
+<div class="panel-body">
+<table id="tbl-content" class="table table-hover table-bordered table-striped">
 <thead>
 <tr>
 <th>Title</th>
+<th>Order</th>
 <th>Date</th>
 <th>Slug</th>
-<th width="200">Display</th>
-<th width="80">Order</th>
-<th width="130">Action</th>
+<th>Display</th>
+<th>Action</th>
 </tr>
 </thead>
 <tbody>
@@ -76,6 +77,7 @@ $res = mysqli_query($con, "SELECT * FROM `".$prefix."content` WHERE `type`='$typ
 while($data = mysqli_fetch_assoc($res)){
 echo'<tr>
 <td><input required type="text" placeholder="Title Here" class="form-control" name="title['.$data['id'].']" value="'.$data['title'].'" /></td>
+<td><input type="text" placeholder="#" class="form-control" name="order['.$data['id'].']" value="'.$data['sort'].'" /></td>
 <td>'.date($date_format, $data['time']).'</td>
 <td><input required type="text" placeholder="Slug Here" class="form-control" name="slug['.$data['id'].']" value="'.$data['slug'].'" /></td>
 <td><select class="form-control" name="status['.$data['id'].']">
@@ -84,7 +86,6 @@ echo'<tr>
 <option>Front Page</option>
 <option>Disabled</option>
 </select></td>
-<td><input type="text" placeholder="#" class="form-control" name="order['.$data['id'].']" value="'.$data['sort'].'" /></td>
 <td>
 <a class="btn btn-info btn-sm" href="'.$admin_url.'edit-content&id='.$data['id'].'&type='.$_GET['id'].'">Edit</a>
 <a class="btn btn-danger btn-sm confirm" href="'.$admin_url.'content&id='.$type.'&delete='.$data['id'].'">Delete</a>
@@ -95,8 +96,14 @@ echo'<tr>
  ?></tbody>
 </table>
 </div>
-</form>
 
+</div>
+</form>
+<style type="text/css">
+#tbl-content tr > td:first-child .form-control{min-width:170px;}
+#tbl-content tr > td:nth-child(2) .form-control{min-width:80px;}
+#tbl-content tr > td:last-child{min-width:130px;}
+</style>
 <script>
 jQuery(function() {
     jQuery('.admpages').pagination({
@@ -107,6 +114,12 @@ jQuery(function() {
 		currentPage: <?php echo $paginate['current']; ?>,
         cssStyle: 'light-theme'
     });
+
+$('#tbl-content').DataTable({
+responsive: true
 });
+
+});
+
+
 </script>
-<?php include('footer.php'); ?>

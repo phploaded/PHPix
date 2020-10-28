@@ -10,7 +10,6 @@ height:100vh;
 overflow:auto;
 }
 
-
 /* reel with photos */
 
 #gal-reel-ctr{
@@ -41,6 +40,7 @@ position:absolute;
 
 #xtag-element{
 transition:transform 0.4s;
+background-color:#fff;
 }
 
 #gal-reel-prev-inner, #gal-reel-next-inner, #gal-reel-now-inner{
@@ -1510,9 +1510,10 @@ height: 100%;
 background-image: url(svg/yt.svg);
 background-repeat: no-repeat ;
 background-position:center center;
-background-size:70px 70px;
+background-size:50px 50px;
 display: block;
 content: ' ';
+z-index:1;
 }
 
 
@@ -1527,7 +1528,7 @@ height: 100px;
 background-image: url(svg/yt.svg);
 background-repeat: no-repeat ;
 background-position:center center;
-background-size:100px 100px;
+background-size:80px 80px;
 display: block !important;
 content: ' ';
 cursor:pointer;

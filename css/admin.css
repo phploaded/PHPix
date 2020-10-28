@@ -1,0 +1,138 @@
+#system-updater{
+position:fixed;
+bottom:0;
+top:0;
+left:0;
+right:0;
+overflow:auto;
+background-color:rgb(255, 255, 255);
+z-index:9999;
+padding:20px;
+}
+
+.huge{
+font-size:24px;
+}
+
+#system-updater-info{
+border:1px solid silver;
+padding:20px;
+overflow:auto;
+}
+
+.rcrop-preview-wrapper{
+background-color:#fff;
+}
+
+.rcrop-preview-wrapper canvas{
+float:left;
+}
+
+.rotate-canvas{
+border:1px solid silver;
+background-color: #fff !important;
+}
+
+.phpl-alert-ctr{
+z-index:99999;
+}
+
+.vert-list{
+margin:0;
+padding:0;
+list-style:none;
+}
+
+.vert-list > li{
+float: left;
+margin: 5px 10px;
+padding: 3px 5px;
+}
+
+.vert-list:before, .vert-list:after{
+content:' ';
+display:block;
+clear:both;
+}
+
+.album-thumb{
+width:160px;
+padding:0 !important;
+background-size:cover;
+background-position:center center;
+}
+
+.album-thumb > img{
+margin:0;
+padding:0;
+width:100%;
+display:block;
+}
+
+
+.nopadding{padding:0px !important;background-color:#fff !important;}
+
+.nopadding > img{width:100%;border:0;}
+
+.album-title{
+font:bold 16px arial !important;
+padding-bottom:5px;
+display:block;
+}
+
+
+.album-buttons .btn{
+margin-bottom: 4px;
+}
+
+.mlib-crop-area{
+position: fixed;
+left: 0;
+top: 0;
+bottom: 0;
+right: 0;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+.mlib-crop-bg{
+position: fixed;
+background:rgba(0, 0, 0, 0.5);
+top: 0;
+bottom: 0;
+left: 0;
+right: 0;
+opacity: 0.5;
+}
+
+.mlib-crop-buttons{
+text-align:center;
+position:fixed;
+bottom:10px;
+left:0;
+right:0;
+}
+
+/* never apply margin, border or padding, otherwise wrong output */
+#mlib-crop{
+}
+
+.rcrop-preview-wrapper{
+position: fixed;
+right: 30px;
+top: 30px;
+}
+
+.mlib-crop-ctr{
+position:relative;
+z-index: 99999;
+}
+
+.rcrop-wrapper{
+box-shadow: 0 0 2px #000;
+}
+
+.blur{
+filter:blur(8px);
+}
