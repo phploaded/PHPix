@@ -50,7 +50,7 @@ function curPageURL() {
     return $pageURL;
 }
 
-error_reporting(E_ALL & ~E_NOTICE);
+error_reporting(0);
 
 if($_POST['sitekey']!='' && !file_exists('phpix-info.php')){
 
