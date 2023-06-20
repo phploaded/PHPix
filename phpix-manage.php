@@ -11,10 +11,12 @@ if($_SESSION['PHPix']!=''){ $phpix_user = 1; }
 elseif($_SESSION['phpixuser']!=''){ $phpix_user = $_SESSION['phpixuser']; } 
 else{$phpix_user ='';}
 
+if(!isset($_GET['nologin'])){$_GET['nologin']='';} 
+
 if($phpix_user!='' || $_GET['nologin']=='1'){
 
 
-
+if(!isset($_GET['page'])){$_GET['page']='';} 
 if($_GET['page']==''){
 include('phpix-manage/index.php');
 } else {

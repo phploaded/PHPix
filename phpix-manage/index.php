@@ -1,5 +1,7 @@
 <?php 
 
+$zhtml = '';
+
 if($_SESSION['phpixuser']!=''){
 echo'<style type="text/css">#delete-cache{display:none;}</style>';
 }
@@ -82,7 +84,7 @@ $output = '<div class="row">
 </div>
 </div>
 </div>
-<a href="'.$mydomain.'phpix-manage.php?page=users">
+<a href="'.$domain.'phpix-manage.php?page=users">
 <div class="panel-footer">
 <span class="pull-left">Manage private users</span>
 <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
@@ -104,7 +106,7 @@ $output = '<div class="row">
 </div>
 </div>
 </div>
-<a href="'.$mydomain.'phpix-manage.php?page=albums">
+<a href="'.$domain.'phpix-manage.php?page=albums">
 <div class="panel-footer">
 <span class="pull-left">Manage gallery albums</span>
 <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
@@ -126,7 +128,7 @@ $output = '<div class="row">
 </div>
 </div>
 </div>
-<a href="'.$mydomain.'phpix-manage.php?page=content&id=note">
+<a href="'.$domain.'phpix-manage.php?page=content&id=note">
 <div class="panel-footer">
 <span class="pull-left">Manage public notes</span>
 <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>

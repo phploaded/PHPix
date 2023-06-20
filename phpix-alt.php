@@ -17,7 +17,7 @@ return get_parent($xdata['parent'], $pstring);
 
 }
 
-
+if(!isset($_GET['u'])){$_GET['u']='';} 
 if($_GET['u']!=''){
 
 $data = mysqli_fetch_assoc(mysqli_query($con, "SELECT * FROM `".$prefix."uploads` WHERE `url`='".$_GET['u']."' limit 1"));
@@ -38,7 +38,7 @@ echo'<!DOCTYPE html>
 ';
 }
 
-
+if(!isset($_GET['a'])){$_GET['a']='';}
 if($_GET['a']!=''){
 
 $data = mysqli_fetch_assoc(mysqli_query($con, "SELECT * FROM `".$prefix."albums` WHERE `id`='".$_GET['a']."' limit 1"));

@@ -1,0 +1,15 @@
+.gal-crop-bg, .gal-zoomed, #flscrn-inner{
+background-color:rgb(136, 207, 255);
+}
+
+.gal-mobile-controls, .gal-cart-indicator, ul.gal-share-menu > li, .gal-toolbar > li, .gal-crop-toggles > li, .album-buttons > li, .album-bar{
+border-color:rgb(136, 207, 255);
+}
+
+.album-bar, .phpl-alert-box-top{background-color:rgb(27, 154, 209);}
+
+.phpl-alert-bg{
+background-color:rgba(136, 207, 255, 0.8);
+}
+
+.gal-buttons-flat-dark .album-bar{background-color:rgb(91, 189, 255);}

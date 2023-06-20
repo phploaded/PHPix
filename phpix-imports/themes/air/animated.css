@@ -1,0 +1,6 @@
+@import "static.css";
+
+#flscrn-inner{
+background-image:url(cloud.svg);
+background-size:400px;
+}

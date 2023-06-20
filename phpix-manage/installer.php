@@ -1,6 +1,8 @@
 <?php 
 
-if($_FILES['xfile']['tmp_name']!=''){
+if(!isset($_POST['action'])){$_POST['action']='';} 
+
+if(isset($_FILES['xfile']['tmp_name']) && $_FILES['xfile']['tmp_name']!=''){
 rrmdir('temp/');
 $parts = pathinfo($_FILES['xfile']['name']);
 $ext = strtolower($parts['extension']);
@@ -21,16 +23,20 @@ if(file_exists('temp/info.json')){
 $data = json_decode(file_get_contents('temp/info.json'), true);
 mkdir('phpix-imports/packages/'.$data['type'].'-'.$data['folder']);
 xcopy('temp/', 'phpix-imports/packages/'.$data['type'].'-'.$data['folder']);
+notify('<b>Success : </b>Package installed successfully!', 'installer', 'success');
 } else {
-$error='package does not contain info.json!';
+notify('<b>Warning : </b>package does not contain info.json!', 'installer', 'warning');
 }
 
 rrmdir('temp/');
 mkdir('temp/');
 unlink('phpix-imports/packages/'.$file);
 
-} else {$error='package is not a zip file!';}
-echo $error;
+} else {
+notify('<b>Warning : </b>package is not a zip file!', 'installer', 'warning');
+}
+
+
 }
 
 
@@ -77,12 +83,15 @@ rrmdir($package);
 
 
 
- ?><br /><br />
+ ?><br />
 <div class="row">
 <div class="col-xs-12 col-md-3"></div>
 
 <div class="col-xs-12 col-md-6">
-
+<?php 
+if(!isset($notify['installer'])){$notify['installer']='';} 
+echo $notify['installer']; 
+?><br>
 <form action="" method="post" enctype="multipart/form-data">
 <div class="panel panel-primary">
 <div class="panel-heading">Install a ZIP package file</div>

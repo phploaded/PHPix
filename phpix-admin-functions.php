@@ -38,7 +38,7 @@ function xcopy($src, $dest) {
             mkdir($dest . '/' . $file);
             xcopy($src . '/' . $file, $dest . '/' . $file);
         } else {
-            copy($src . '/' . $file, $dest . '/' . $file);
+            @copy($src . '/' . $file, $dest . '/' . $file);
         }
     }
 }
@@ -81,12 +81,14 @@ echo'<div class="col-lg-12"><div class="row"><h2 class="page-header">'.$title.'<
 
 function quick_paginate($numrows){
 
+if(!isset($_GET['ipp'])){$_GET['ipp']='';} 
 if($_GET['ipp']>0){
 $per_page = $_GET['ipp'];
 } else {
 $per_page = 10;
 }
 
+if(!isset($_GET['pagenumber'])){$_GET['pagenumber']='';} 
 if($_GET['pagenumber']>0){
 $paginate['current'] = $_GET['pagenumber'];
 $start = ($_GET['pagenumber']-1)*$per_page;
@@ -95,8 +97,8 @@ $paginate['current'] = 1;
 $start = 0;
 }
 
-$paginate[start] = $start;
-$paginate[per_page] = $per_page;
+$paginate['start'] = $start;
+$paginate['per_page'] = $per_page;
 
 return $paginate;
 }
@@ -111,6 +113,7 @@ return $text;
 /* creates notifications on various predefined indexes for later displayed */
 function notify($text, $index, $class='success'){
 global $notify;
+if(!isset($notify[$index])){$notify[$index]='';} 
 $notify[$index] = $notify[$index].'<div class="alert alert-dismissible alert-'.$class.'">
 <button type="button" class="close" data-dismiss="alert">×</button>
 <p>'.$text.'</p>

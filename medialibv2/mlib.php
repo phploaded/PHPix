@@ -143,6 +143,9 @@ echo $count.' Files moved!';
 
 if($method == 'load_thumbs'){
 
+if(!isset($_REQUEST['ipp'])){$_REQUEST['ipp']='';} 
+if(!isset($_REQUEST['sort'])){$_REQUEST['sort']='';} 
+if(!isset($_REQUEST['page'])){$_REQUEST['page']='';} 
 if($_REQUEST['ipp']==''){$ipp=30;} else {$ipp=$_REQUEST['ipp'];}
 if($_REQUEST['sort']==''){$xsort='time-DESC';} else {$xsort=$_REQUEST['sort'];}
 if($_REQUEST['page']==''){$page=0;} else {$page=$_REQUEST['page']-1;}

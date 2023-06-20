@@ -56,7 +56,7 @@ mlib_upload_resolution = '<?php echo $mlib_upload_resolution; ?>';
 
 <div id="wrapper">
 <?php 
-
+if(!isset($_SESSION['PHPix'])){$_SESSION['PHPix']='';} 
 if($_SESSION['PHPix']!=''){
 
 ?>
@@ -97,7 +97,7 @@ if($_SESSION['PHPix']!=''){
 </div>
 </nav>
 <?php } 
-
+if(!isset($_SESSION['phpixuser'])){$_SESSION['phpixuser']='';} 
 if($_SESSION['phpixuser']!=''){ ?>
 <nav class="navbar navbar-<?php echo $default_admin_menu; ?> navbar-fixed-top" role="navigation" style="margin-bottom: 0">
 <div class="container">

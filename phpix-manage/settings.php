@@ -1,5 +1,11 @@
 <br /><br /><?php 
 
+if(!isset($_POST['title'])){$_POST['title']='';}
+if(!isset($_POST['descr'])){$_POST['descr']='';}
+if(!isset($_POST['access'])){$_POST['access']='';}
+if(!isset($_POST['parent'])){$_POST['parent']='';}
+
+
 $title = clean_text($_POST['title']);
 $title_length = strlen($title);
 $descr = clean_text($_POST['descr']);
@@ -84,7 +90,9 @@ $out = $out.'<option value="'.$xrow['email'].'">'.$xrow['email'].'</option>';
 
 <div class="col-xs-12 col-md-2"></div>
 <div class="col-xs-12 col-md-8">
-<?php echo $notify['newalbum']; ?>
+<?php 
+if(!isset($notify['newalbum'])){$notify['newalbum']='';}
+echo $notify['newalbum']; ?>
 <form action="" autocomplete="off" method="post" enctype="multipart/form-data" class="form-horizontal">
   <div class="panel panel-primary">
     <div class="panel-heading text-center">Editing Album</div>
@@ -171,7 +179,7 @@ echo'<option value="'.$xrow['id'].'">'.$xrow['title'].' ('.$xtype.', '.$xrow['co
 </div>
 <script>
 jQuery(document).ready(function(){
-jQuery('#option<?php echo $data[access]; ?>').trigger('click');
+jQuery('#option<?php echo $data['access']; ?>').trigger('click');
 jQuery('#parent').val('<?php echo $data['parent']; ?>');
 
 $('#maillist').multiselect({

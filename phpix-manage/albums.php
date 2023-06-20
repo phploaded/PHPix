@@ -2,6 +2,8 @@
 
 sadmin_title('Albums<a href="'.$admin_url.'new-album" class="btn btn-success btn-medium pull-right">Create new</a>'); 
 
+if(!isset($_GET['delete'])){$_GET['delete']='';} 
+
 if($_GET['delete']!=''){
 
 $qry = "SELECT * FROM `".$prefix."albums` WHERE `id`='".$_GET['delete']."'";
@@ -27,7 +29,9 @@ notify('<b>'.$xdata['title'].'</b> was deleted successfully!', 'albums', 'succes
 
 ?>
 <div class="clearfix"></div>
-<?php echo $notify['albums']; ?>
+<?php 
+if(!isset($notify['albums'])){$notify['albums']='';} 
+echo $notify['albums']; ?>
 
 <table id="tbl-albums" class="table table-stripped table-bordered table-condensed table-hover display">
     <thead>
@@ -55,6 +59,7 @@ ORDER BY `".$prefix."albums`.`created` DESC";
 $res = mysqli_query($con, $sql2);
 
 $i=0;
+$albums = '';
 while($row = mysqli_fetch_assoc($res)){
 ++$i;
 

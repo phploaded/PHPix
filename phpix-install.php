@@ -1,5 +1,7 @@
 <?php 
 
+$installed = 0;
+
    // Function to remove folders and files 
     function rrmdir($dir) {
         if (is_dir($dir)) {
@@ -50,8 +52,8 @@ function curPageURL() {
     return $pageURL;
 }
 
-error_reporting(0);
-
+error_reporting(E_ALL & ~E_NOTICE);
+if(!isset($_POST['sitekey'])){$_POST['sitekey']='';} 
 if($_POST['sitekey']!='' && !file_exists('phpix-info.php')){
 
 $con = new mysqli($_POST['dbhost'], $_POST['dbuser'], $_POST['dbpwd'], $_POST['dbname']);
@@ -61,7 +63,7 @@ $installed = 2;
 } else { // if db connection working
 
 $xthumb_id = uniqid();
-$domain = str_replace('phpix-install.php', '', curPageURL());
+$domain = str_replace('phpix-install.php', '', @curPageURL());
 
 $phpix_data = '<?php 
 
@@ -218,10 +220,6 @@ run_query( "ALTER TABLE `".$_POST['dbprefix']."albums`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `slug` (`slug`);");
 
-run_query( "ALTER TABLE `".$_POST['dbprefix']."albums`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `slug` (`slug`);");
-
 run_query( "ALTER TABLE `".$_POST['dbprefix']."content`
   ADD PRIMARY KEY (`id`);");
 
@@ -265,9 +263,9 @@ if ($zip->open($zipFile) === TRUE) {
 }
 
 
-xcopy('PHPix-master/' , './' );
+@xcopy('PHPix-master/' , './' );
 
-rrmdir('PHPix-master/');
+@rrmdir('PHPix-master/');
 
 
 // create phpix config file
@@ -397,6 +395,16 @@ color: #000;
 <legend>Database settings</legend>
 <div class="input-block">
 <label for="dbhost">Database Host</label>
+<?php 
+if(!isset($_POST['dbhost'])){$_POST['dbhost']='';} 
+if(!isset($_POST['dbname'])){$_POST['dbname']='';} 
+if(!isset($_POST['dbuser'])){$_POST['dbuser']='';} 
+if(!isset($_POST['dbpwd'])){$_POST['dbpwd']='';} 
+if(!isset($_POST['dbprefix'])){$_POST['dbprefix']='';} 
+if(!isset($_POST['admmail'])){$_POST['admmail']='';} 
+if(!isset($_POST['admpwd'])){$_POST['admpwd']='';} 
+if(!isset($_POST['secretkey'])){$_POST['secretkey']='';} 
+ ?>
 <input required="required" value="<?php echo $_POST['dbhost'] ?>" type="text" name="dbhost" />
 </div>
 

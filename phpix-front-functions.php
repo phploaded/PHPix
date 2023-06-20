@@ -1,7 +1,7 @@
 <?php 
 
 function randomColor(){
-    $result = array('rgb' => '', 'hex' => '');
+    $result = array('rgb' => array(), 'hex' => '');
     foreach(array('r', 'b', 'g') as $col){
         $rand = mt_rand(0, 255);
         $result['rgb'][$col] = $rand;
@@ -48,6 +48,10 @@ $classes = array(
 
 echo'<div class="album-ctr">
 <div class="album-list ximghvr">';
+
+
+if(!isset($_SESSION['PHPix'])){$_SESSION['PHPix']='';} 
+if(!isset($_SESSION['phpixuser'])){$_SESSION['phpixuser']='';} 
 
 if($_SESSION['PHPix']!=''){
 $sql = "SELECT * FROM `".$prefix."albums` WHERE".$esql." (`access`='public' OR `access`='private') ORDER BY `title` ASC";

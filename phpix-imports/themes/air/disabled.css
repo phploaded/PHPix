@@ -1,0 +1,9 @@
+@import "common.css";
+
+.gal-mobile-controls, .gal-cart-indicator, ul.gal-share-menu, .gal-toolbar, .gal-crop-toggles{
+background-color:rgb(27, 154, 209);
+}
+
+#gal-reel-now-inner, #gal-reel-prev-inner, #gal-reel-next-inner, .gal-main-slide-right, .gal-main-slide-left{
+background-color:rgb(0, 84, 140);
+}

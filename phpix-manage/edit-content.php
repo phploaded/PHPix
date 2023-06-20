@@ -36,5 +36,3 @@ $data = mysqli_fetch_assoc(mysqli_query($con, "SELECT * FROM `".$prefix."content
 CKEDITOR.replace( 'ckeditor' );
 CKEDITOR.config.contentsCss = main_domain+'css/ckedit-custom.css' ;
 </script>
-
-<?php include('footer.php'); ?>

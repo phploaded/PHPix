@@ -1,4 +1,7 @@
 <br /><br /><?php 
+if(!isset($_POST['email'])){$_POST['email']='';} 
+if(!isset($_POST['pass'])){$_POST['pass']='';} 
+if(!isset($_POST['cpass'])){$_POST['cpass']='';} 
 
 $email = $_POST['email'];
 $pass = $_POST['pass'];
@@ -45,7 +48,9 @@ if($data['total']==0){
 
 <div class="col-xs-12 col-md-2"></div>
 <div class="col-xs-12 col-md-8">
-<?php echo $notify['newuser']; ?>
+<?php 
+if(!isset($notify['newuser'])){$notify['newuser']='';} 
+echo $notify['newuser']; ?>
 <form action="" autocomplete="off" method="post" enctype="multipart/form-data" class="form-horizontal">
   <div class="panel panel-primary">
     <div class="panel-heading text-center">Add User</div>

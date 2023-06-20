@@ -1,0 +1,14 @@
+@import "common.css";
+
+#flscrn-inner{
+background-image:url(cloud.png);
+background-size:600px auto;
+}
+
+.gal-mobile-controls, .gal-cart-indicator, ul.gal-share-menu, .gal-toolbar{
+background-color:rgba(27, 154, 209, 0.8);
+}
+
+#gal-reel-prev-inner, #gal-reel-next-inner, .gal-main-slide-right, .gal-main-slide-left{
+background-color:rgba(0, 84, 140, 0.5);
+}

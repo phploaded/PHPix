@@ -18,12 +18,12 @@ include('phpix-front-functions.php');
 <li onclick="album_notes();album_toggle_sidebar();">Public news and notebook</li>
 <li onclick="gal_settings()">User Interface Settings</li>
 <?php 
-if($_SESSION['phpixuser']==''){
+if(!isset($_SESSION['phpixuser'])){
 echo'<li><a target="_blank" href="'.$admin_url.'index">Administration Area</a></li>';
 }
 
-if($_SESSION['PHPix']==''){
-if($_SESSION['phpixuser']==''){
+if(!isset($_SESSION['PHPix'])){
+if(!isset($_SESSION['phpixuser'])){
 echo'<li onclick="album_get_pwd()">Retrieve your password</li>
 <li onclick="album_login()">User Login</li>';
 } else {
@@ -79,6 +79,8 @@ gal_display_albums();
 <?php 
 
 $count = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(*) as total FROM `".$prefix."content` WHERE `type`='note' AND `status`='Enabled'"));
+
+if(!isset($_GET['pagenumber'])){$_GET['pagenumber']='';} 
 
 if($_GET['pagenumber']==''){
 $cpage = 1;

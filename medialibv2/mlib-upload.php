@@ -1,4 +1,4 @@
-<?php session_start();
+<?php 
 
 include('mlib-config.php');
 $userid = $mlib_current_user;
@@ -55,11 +55,12 @@ VALUES ('$id', '$ext', '$title', '$folder', '$caption', '$url', '$thumb', '".tim
 
 }
 
+if(isset($_POST["mlib_manual"])){
 if($_POST["mlib_manual"]=="yes"){
 echo'<script>
 //window.top.mlib_thumbs_after_upload();
 window.location.href=\'mlib-iframe.php?init=1\';</script>';
-}
+}}
 
 }
 

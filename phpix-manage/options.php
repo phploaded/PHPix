@@ -6,6 +6,8 @@
 <div class="form-horizontal">
 <?php 
 
+if(!isset($_POST['ui-setting-animation'])){$_POST['ui-setting-animation']='';} 
+
 if($_POST['ui-setting-animation']!=''){
 
 $html = "

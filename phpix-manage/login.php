@@ -1,5 +1,5 @@
 <?php 
-
+$error = '';
 if(isset($_POST['pwd'])){
 
 $verifyResponse = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret='.$secretKey.'&response='.$_POST['g-recaptcha-response']); 

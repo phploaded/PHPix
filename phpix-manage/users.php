@@ -2,6 +2,7 @@
 admin_only();
 sadmin_title('Private Users<a href="'.$admin_url.'new-user" class="btn btn-success btn-medium pull-right">Create new</a><div class="clearfix"></div>'); 
 
+if(isset($_POST['uname'])){
 if(count($_POST['uname'])>0){
 
 foreach($_POST['uname'] as $key => $val){
@@ -13,6 +14,7 @@ mysqli_query($con, "UPDATE `".$prefix."users` SET `pwd`='$val', `time`='".time()
 mysqli_query($con, "UPDATE `".$prefix."users` SET `time`='".time()."', `name`='".$uname."' WHERE `id`='$key'");
 }
 
+}
 }
 
 

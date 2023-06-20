@@ -2,12 +2,20 @@
 include('phpix-config.php');
 include('phpix-front-functions.php');
 
+
+function fixExifKey($key, $val){
+if(!isset($key[$val])){$key[$val]='';}
+return $key[$val];
+}
+
+if(isset($_GET['design'])){
 if($_GET['design']=='1'){
 echo'<!DOCTYPE html>
 <html><head>';
 include('phpix-scripts.php');
 echo'</head>
 <body>';
+}
 }
 
 
@@ -71,20 +79,21 @@ $metering_mode = array(
 if(file_exists($file)){
 $exif = exif_read_data($file);
 
-$mmode = $exif['MeteringMode'];
+$mmode = fixExifKey($exif, 'MeteringMode');
 if(array_key_exists($mmode, $metering_mode)){
 $metering = $metering_mode[$mmode].' ('.$mmode.')';
 } else {
 $metering = $mmode;
 }
 
-$fp = explode('/', $exif['FocalLength']);
-if(count($fp)>0 && $fp[1]>0){
+$fp = explode('/', fixExifKey($exif, 'FocalLength'));
+
+if(count($fp)>0 && isset($fp[1])){
 $focal = $fp[0]/$fp[1].' mm';
-} elseif($fp[0]>0 && $fp[1]<=0){
+} elseif($fp[0]>0 && !isset($fp[1])){
 $focal = $fp[0].' mm';
 } else {
-$focal = $exif['FocalLength'];
+$focal = fixExifKey($exif, 'FocalLength');
 }
 
 $local_name = $file_parts['filename'].'.'.$file_parts['extension'];
@@ -109,6 +118,10 @@ ON `".$prefix."uploads`.`folder` = `".$prefix."albums`.`id` WHERE `url`='".$loca
 
 $data = mysqli_fetch_assoc(mysqli_query($con, $sql));
 
+$fl = fixExifKey($exif, 'Flash');
+if(!isset($exif['COMMENT'][0])){$exif['COMMENT'][0]='';}
+
+
 echo'<div xtarget="gal_info_main" class="gal-title"><b class="gal-expand" title="Click this icon to toggle information"></b>General Information</div>
 <div class="gal-info gal_info_main">
 <h3>'.$data['title'].'</h3>
@@ -122,7 +135,7 @@ echo'<div xtarget="gal_info_main" class="gal-title"><b class="gal-expand" title=
 <table>
 <tr><td>File Name :</td><td>'.$file_parts['filename'].'.'.$file_parts['extension'].'</td></tr>
 <tr><td>Type :</td><td>'.mime_content_type($file).' ('.$file_parts['extension'].' file)</td></tr>
-<tr><td>Size :</td><td>'.convertToReadableSize($exif['FileSize']).' ('.$exif['FileSize'].' bytes)</td></tr>
+<tr><td>Size :</td><td>'.convertToReadableSize(fixExifKey($exif, 'FileSize')).' ('.fixExifKey($exif, 'FileSize').' bytes)</td></tr>
 <tr><td>Modified on :</td><td>'.date("d M Y, h:i a", filemtime($file)).'</td></tr>
 <tr><td>Attributes :</td><td>'.$size[0].' x '.$size[1].' ('.round((($size[0]*$size[1])/1000000), 1, PHP_ROUND_HALF_UP).' MP) <b>'.$ratio.'</b></td></tr>
 </table>
@@ -133,17 +146,17 @@ echo'<div xtarget="gal_info_main" class="gal-title"><b class="gal-expand" title=
 <div class="gal-tabs gal_info_exif">
 <div class="gal-exif">
 <table>
-<tr><td>Make</td><td>'.$exif['Make'].'</td></tr>
-<tr><td>Model</td><td>'.$exif['Model'].'</td></tr>
-<tr><td>Software</td><td>'.$exif['Software'].'</td></tr>
-<tr><td>Captured on</td><td>'.$exif['DateTime'].'</td></tr>
-<tr><td>Exposure Time</td><td>'.$exif['ExposureTime'].'</td></tr>
-<tr><td>Exposure Program</td><td>'.$exif['ExposureProgram'].'</td></tr>
-<tr><td>Exposure Bias</td><td>'.$exif['ExposureBiasValue'].'</td></tr>
-<tr><td>F Number</td><td>'.$exif['FNumber'].'</td></tr>
-<tr><td>Max Aperture</td><td>'.$exif['MaxApertureValue'].'</td></tr>
-<tr><td>ISO Speed</td><td>'.$exif['ISOSpeedRatings'].'</td></tr>
-<tr><td>Flash</td><td>'.$flash[$exif['Flash']].'</td></tr>
+<tr><td>Make</td><td>'.fixExifKey($exif, 'Make').'</td></tr>
+<tr><td>Model</td><td>'.fixExifKey($exif, 'Model').'</td></tr>
+<tr><td>Software</td><td>'.fixExifKey($exif, 'Software').'</td></tr>
+<tr><td>Captured on</td><td>'.fixExifKey($exif, 'DateTime').'</td></tr>
+<tr><td>Exposure Time</td><td>'.fixExifKey($exif, 'ExposureTime').'</td></tr>
+<tr><td>Exposure Program</td><td>'.fixExifKey($exif, 'ExposureProgram').'</td></tr>
+<tr><td>Exposure Bias</td><td>'.fixExifKey($exif, 'ExposureBiasValue').'</td></tr>
+<tr><td>F Number</td><td>'.fixExifKey($exif, 'FNumber').'</td></tr>
+<tr><td>Max Aperture</td><td>'.fixExifKey($exif, 'MaxApertureValue').'</td></tr>
+<tr><td>ISO Speed</td><td>'.fixExifKey($exif, 'ISOSpeedRatings').'</td></tr>
+<tr><td>Flash</td><td>'.fixExifKey($flash, $fl).'</td></tr>
 <tr><td>Focal Length</td><td>'.$focal.'</td></tr>
 <tr><td>Metering Mode</td><td>'.$metering.'</td></tr>
 <tr><td>Comment</td><td>'.$exif['COMMENT'][0].'</td></tr>
@@ -155,8 +168,8 @@ echo'<div xtarget="gal_info_main" class="gal-title"><b class="gal-expand" title=
 echo"<b>$file</b> - File not found";
 }
 
-
+if(isset($_GET['design'])){
 if($_GET['design']=='1'){
 echo'</body></html>';
-}
+}}
  ?>
