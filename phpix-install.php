@@ -99,7 +99,7 @@ $default_gallery_settings = array(
 	"temp_dir" => "temp"	,
 );
 
-if($_SESSION["gallery"]["thumb_width"]==""){
+if(!isset($_SESSION["gallery"]["thumb_width"])){
 $_SESSION["gallery"] = $default_gallery_settings;
 }
 
