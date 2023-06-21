@@ -371,10 +371,93 @@ padding: 5px 10px;
 background-color: #ccc;
 color: #000;
 }
+
+
+.spinner {
+  -webkit-animation: rotate 2s linear infinite;
+          animation: rotate 2s linear infinite;
+  z-index: 2;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -25px 0 0 -25px;
+  width: 50px;
+  height: 50px;
+}
+.spinner .path {
+  stroke: #93bfec;
+  stroke-linecap: round;
+  -webkit-animation: dash 1.5s ease-in-out infinite;
+          animation: dash 1.5s ease-in-out infinite;
+}
+
+@-webkit-keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@-webkit-keyframes dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
+
+.spin-ctr{
+height:60px;
+position:relative;
+}
+
+#installing{display:none;}
 </style>
+<script type="text/javascript">
+function showSpinner(){
+document.getElementById("installing").style.display = "block";
+document.getElementById("mainctr").style.display = "none";
+return true;
+}
+</script>
 </head>
 <body>
-<div class="container">
+<div id="installing" class="container">
+<h1>Installing PHPix....</h1>
+<div class="spin-ctr">
+<svg class="spinner" viewBox="0 0 50 50">
+  <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+</svg>
+</div>
+<p><span style="color:red;">Please do not close this window or browser until installation is complete.</span> 
+If the installation stops because of PHP script timeout, then this installer wont work for you. Instead, you can simply <a target="_blank" href="https://github.com/phploaded/phpix-packages/tree/main/phpix-full">download the latest zip file manually</a> by yourself from github, extract the contents of the zip file to your server then try again.</p>
+</div>
+<div id="mainctr" class="container">
 <h1>PHPix Installer</h1>
 <?php if($installed == 1){ ?>
 <p style="color:green;"><b>PHPix</b> was installed successfully!</p>
@@ -390,7 +473,7 @@ color: #000;
 <p>If old installation is not working, you may try tweaking various options in <b>phpix-config.php</b>. However, before you start editing, it is recommended to make a backup so that you can replace the file back later, if something goes wrong.</p>
 <?php } else { ?>
 <div class="form">
-<form method="post" enctype="multipart/form-data">
+<form method="post" action="" onsubmit="return showSpinner()" enctype="multipart/form-data">
 <fieldset>
 <legend>Database settings</legend>
 <div class="input-block">
