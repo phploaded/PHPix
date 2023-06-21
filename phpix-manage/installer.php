@@ -1,6 +1,7 @@
 <?php 
 
 if(!isset($_POST['action'])){$_POST['action']='';} 
+if(!isset($_POST['package'])){$_POST['package']=array();} 
 
 if(isset($_FILES['xfile']['tmp_name']) && $_FILES['xfile']['tmp_name']!=''){
 rrmdir('temp/');

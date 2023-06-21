@@ -5,6 +5,7 @@ if(!isset($_POST['descr'])){$_POST['descr']='';}
 if(!isset($_POST['access'])){$_POST['access']='';}
 if(!isset($_POST['parent'])){$_POST['parent']='';}
 
+if(!isset($_POST['maillist'])){$_POST['maillist']=array();} 
 
 $title = clean_text($_POST['title']);
 $title_length = strlen($title);

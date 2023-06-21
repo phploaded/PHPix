@@ -4,6 +4,7 @@ if(!isset($_POST['descr'])){$_POST['descr']='';}
 if(!isset($_POST['access'])){$_POST['access']='';} 
 if(!isset($_POST['emails'])){$_POST['emails']='';} 
 if(!isset($_POST['parent'])){$_POST['parent']='';} 
+if(!isset($_POST['maillist'])){$_POST['maillist']=array();} 
 $title = clean_text($_POST['title']);
 $title_length = strlen($title);
 $descr = clean_text($_POST['descr']);
@@ -30,7 +31,7 @@ $time = time();
 
 $data = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(*) as total FROM `".$prefix."albums` WHERE `slug`='$slugged' limit 1"));
 if($data['total']!=0){
-notify('<b>Error :</b>'.$inserted.' Your album <b>'.$title.'</b> could not be created because you already have another album with very similar name. Please retry after editing the title.', 'newalbum', 'danger');
+notify('<b>Error :</b>Your album <b>'.$title.'</b> could not be created because you already have another album with very similar name. Please retry after editing the title.', 'newalbum', 'danger');
 } else {
 	
 mysqli_query($con, "INSERT INTO `".$prefix."albums` 
