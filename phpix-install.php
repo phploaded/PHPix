@@ -2,6 +2,16 @@
 
 $installed = 0;
 
+// Function to check if a PHP extension is loaded
+function checkExtension($extensionName) {
+    if (extension_loaded($extensionName)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
    // Function to remove folders and files 
     function rrmdir($dir) {
         if (is_dir($dir)) {
@@ -53,6 +63,17 @@ function curPageURL() {
 }
 
 error_reporting(E_ALL & ~E_NOTICE);
+
+if(checkExtension('zip')==false){
+$error = "<b>zip</b> extention is not enabled on your server. This is needed for unzipping and zipping files.<br>";
+$installed = 2;
+}
+
+if(checkExtension('gd')==false){
+$error = $error."<b>gd</b> extention is not enabled on your server. This is needed to edit and resize images.";
+$installed = 2;
+}
+
 if(!isset($_POST['sitekey'])){$_POST['sitekey']='';} 
 if($_POST['sitekey']!='' && !file_exists('phpix-info.php')){
 
