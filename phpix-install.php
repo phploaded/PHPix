@@ -274,6 +274,19 @@ run_query( "ALTER TABLE `".$_POST['dbprefix']."packages`
 
 run_query( "ALTER TABLE `".$_POST['dbprefix']."users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;");
+  
+run_query( "CREATE TABLE `".$_POST['dbprefix']."spots` (
+  `id` int(11) NOT NULL,
+  `uid` varchar(50) NOT NULL,
+  `title` varchar(1000) NOT NULL DEFAULT 'no_title'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+
+run_query( "ALTER TABLE `".$_POST['dbprefix']."spots`
+  ADD PRIMARY KEY (`id`);");
+  
+run_query( "ALTER TABLE `".$_POST['dbprefix']."spots`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+COMMIT;");
 
 
 // unzip folder
