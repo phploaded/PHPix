@@ -2,16 +2,6 @@
 
 $installed = 0;
 
-// Function to check if a PHP extension is loaded
-function checkExtension($extensionName) {
-    if (extension_loaded($extensionName)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-
    // Function to remove folders and files 
     function rrmdir($dir) {
         if (is_dir($dir)) {
@@ -63,17 +53,6 @@ function curPageURL() {
 }
 
 error_reporting(E_ALL & ~E_NOTICE);
-
-if(checkExtension('zip')==false){
-$error = "<b>zip</b> extention is not enabled on your server. This is needed for unzipping and zipping files.<br>";
-$installed = 2;
-}
-
-if(checkExtension('gd')==false){
-$error = $error."<b>gd</b> extention is not enabled on your server. This is needed to edit and resize images.";
-$installed = 2;
-}
-
 if(!isset($_POST['sitekey'])){$_POST['sitekey']='';} 
 if($_POST['sitekey']!='' && !file_exists('phpix-info.php')){
 
@@ -274,19 +253,6 @@ run_query( "ALTER TABLE `".$_POST['dbprefix']."packages`
 
 run_query( "ALTER TABLE `".$_POST['dbprefix']."users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;");
-  
-run_query( "CREATE TABLE `".$_POST['dbprefix']."spots` (
-  `id` int(11) NOT NULL,
-  `uid` varchar(50) NOT NULL,
-  `title` varchar(1000) NOT NULL DEFAULT 'no_title'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
-
-run_query( "ALTER TABLE `".$_POST['dbprefix']."spots`
-  ADD PRIMARY KEY (`id`);");
-  
-run_query( "ALTER TABLE `".$_POST['dbprefix']."spots`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
-COMMIT;");
 
 
 // unzip folder
