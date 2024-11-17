@@ -18,7 +18,7 @@ gal_domain='<?php echo $gallery_domain; ?>';
 albumFILE = '<?php echo $albumFILE; ?>';
 gal_quality='<?php echo $quality; ?>';
 gal_vars_aid='<?php echo $_GET["aid"]; ?>';
-gal_vars_uid='<?php if(!isset($_SESSION["PHPix"])){echo "0"; $xtag_save_db = "false";} else {echo "1"; $xtag_save_db = "true";} ?>';
+gal_vars_uid='<?php if($phpix_user==''){echo "0"; $xtag_save_db = "false";} else {echo $phpix_user; $xtag_save_db = "true";} ?>';
 var xtag_save_db=<?php echo $xtag_save_db; ?>;
 gal_sitekey = '<?php echo $siteKey; ?>';
 </script>

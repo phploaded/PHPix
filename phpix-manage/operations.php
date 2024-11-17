@@ -36,6 +36,12 @@ $dir = 'full';
 $dir = $_GET['dir'];
 }
 
+if(isset($_GET['albumid'])){
+$return_url = $domain."phpix-manage.php?page=backup&aid=".$_GET['albumid']."&make=yes&dir=".$_GET['dir'];
+} else {
+$return_url = $domain."phpix-manage.php?page=operations&method=calculate&dir=".$_GET['dir'];
+}
+
 echo'<br><br>
 <div class="progress progress-striped active">
 <div id="gen-progress-bar" class="progress-bar" style="width: 0%"></div>
@@ -73,7 +79,7 @@ $('#gen-stats').html(zhtml);
 start_generating();
 });
 } else {
-document.location.href = '".$domain."phpix-manage.php?page=operations&method=calculate&dir=".$_GET['dir']."';
+document.location.href = '".$return_url."';
 }
 }
 </script>";
@@ -97,7 +103,10 @@ foreach($files as $file){
 unlink($path.'/'.$file);
 }
 
-mysqli_query($con, "UPDATE `".$prefix."dirs` SET `time`='".time()."', `files`='0', `size`='0' WHERE `id`='".$path."'");
+// create empty index.html
+file_put_contents($path.'/index.html', '');
+
+mysqli_query($con, "UPDATE `".$prefix."dirs` SET `time`='".time()."', `files`='1', `size`='0' WHERE `id`='".$path."'");
 echo "<script>document.location.href = '".$domain."phpix-manage.php?page=index';</script>";
 } else {
 echo'<br><br><br><br>Cannot delete original images!';

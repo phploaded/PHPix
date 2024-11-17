@@ -187,10 +187,20 @@ $file_id = uniqid();
 
 if (filter_var($url, FILTER_VALIDATE_URL) && strlen($url)>5) {
 
-
-if(is_yt_URL($url)){
+// https://www.youtube.com/watch?v=odEZtGYKzFU
+if(str_contains($url, 'watch?v=')){
 $video_arr = explode("?v=", $url);
 $video_arr2 = explode("&", $video_arr[1]);
+$video_id = $video_arr2[0];
+$url="http://img.youtube.com/vi/".$video_id."/maxresdefault.jpg";
+$ctype="youtube";
+$file_id = 'yt['.$video_id.']'.uniqid();
+}
+
+// https://youtu.be/IYpPpM23VjY?si=LdFFxmaX13uunXMb
+if(str_contains($url, '/youtu.be/')){
+$video_arr = explode("youtu.be/", $url);
+$video_arr2 = explode("?", $video_arr[1]);
 $video_id = $video_arr2[0];
 $url="http://img.youtube.com/vi/".$video_id."/maxresdefault.jpg";
 $ctype="youtube";
@@ -221,7 +231,7 @@ $file_id = 'yt['.$video_id.']'.uniqid();
 		VALUES ('".$data['id']."', '".$data['ext']."', '".$data['title']."', '".$data['title']."', '".$url."', '$thumb', '".time()."', '1')");
 		echo'<b>Success : </b><i>'.$url.'</i> was uploaded.<br /><script>mlib_uploaded_preview(\''.$thumb.'\')</script>';
 	} else {
-		unlink('../full/'.$data['fname']);
+		//unlink('../full/'.$data['fname']);
 		echo '<b>Error : </b>This is not a valid file format. Transfer Aborted.<br />';
 	}
 

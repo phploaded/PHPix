@@ -36,7 +36,18 @@ if($mlib_db->connect_errno > 0){
     die('<h1>Unable to connect to database [' . $mlib_db->connect_error . ']</h1>');
 }
 
-
+if (!function_exists('str_contains')) {
+    /**
+     * Check if a string contains a specific substring.
+     *
+     * @param string $haystack The string to search in.
+     * @param string $needle The substring to search for.
+     * @return bool True if the haystack contains the needle, false otherwise.
+     */
+    function str_contains($haystack, $needle) {
+        return $needle !== '' && strpos($haystack, $needle) !== false;
+    }
+}
 
 function format_tags($text){
 $text = trim($text);
@@ -75,24 +86,22 @@ return $thumb;
 
 }
 
-// https://www.youtube.com/watch?v=odEZtGYKzFU
-function is_yt_URL($url){
-$xurl = explode("watch?v=", $url);
-if($xurl[1]!=''){return true;} else {return false;}
-}
-
-
-
 /* $file_id is new filename without extention */
 function upload_from_url($url, $file_id, $file_ext='none'){
 global $mlib_allowed_images_mime;
 $domain = MLIBURL;
 $fname = pathinfo($url);
-$fname['extension'] = '';
+//$fname['extension'] = '';
 
 $title = slugify($fname['filename']);
 $file_name = $file_id.'.'.strtolower($fname['extension']);
-$get_file1 = file_get_contents($url);
+$get_file1 = @file_get_contents($url);
+
+// if YouTube MAXRES image upload fails, try HQ version
+if(strlen($get_file1)==0  && str_contains($url, 'maxresdefault.jpg')){
+$get_file1 = file_get_contents(str_replace('maxresdefault.jpg', '0.jpg', $url));
+echo'<b style="color:red;">No high resolution image</b> exists with this YouTube video. Using lower quality image instead.<br />';
+}
 
 //die($fname['extension']);
 $new_file1 = fopen('../full/'.$file_name, "w");
