@@ -273,7 +273,7 @@ run_query( "ALTER TABLE `".$_POST['dbprefix']."packages`
 run_query( "ALTER TABLE `".$_POST['dbprefix']."users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;");
 
-run_query( "CREATE TABLE IF NOT EXISTS `".$_POST['dbprefix']."spots` (
+run_query( "CREATE TABLE `".$_POST['dbprefix']."spots` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `uid` varchar(50) NOT NULL,
   `sort` int(11) NOT NULL DEFAULT 0,
