@@ -85,6 +85,7 @@ rrmdir($package);
 
 
  ?><br />
+<div class="page-header" id="banner"><h2><i class="fa fa-windows text-warning"></i> Package Installer</h2></div>
 <div class="row">
 <div class="col-xs-12 col-md-3"></div>
 
@@ -100,8 +101,8 @@ echo $notify['installer'];
 <input type="file" name="xfile" />
 </div>
 <div class="panel-footer text-right">
-<button type="submit" class="btn btn-small btn-info">Install Package</button>
-<a class="btn btn-small btn-warning" target="_blank" href="http://phploaded.com/page/phpix-themes-packages/">Find packages</a>
+<button type="submit" class="btn btn-small btn-info"><i class="fa fa-lg fa-fw fa-download"></i> Install Package</button>
+<a class="btn btn-small btn-warning" target="_blank" href="http://phploaded.com/page/phpix-themes-packages/"><i class="fa fa-lg fa-fw fa-search"></i> Find packages</a>
 </div>
 </div>
 </form>

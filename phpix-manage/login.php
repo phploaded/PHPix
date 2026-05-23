@@ -34,7 +34,11 @@ $error = '<div class="alert alert-dismissible alert-danger">
 <?php echo $error; ?>
                 <div class="login-panel panel panel-default">
                     <div class="panel-heading">
-                        <h3 class="panel-title">Please Sign In</h3>
+                        <h3 class="panel-title">
+                        Please Sign In
+                        <a href="phpix-album.php" class="btn btn-xs btn-info pull-right" style="margin-top:-4px;color:#fff;"><i class="fa fa-th-large"></i> Gallery</a>
+                        </h3>
+                        <div class="clearfix"></div>
                     </div>
                     <div class="panel-body">
                         <form role="form" action="phpix-manage.php?page=login" method="post">

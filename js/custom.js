@@ -1,4 +1,5 @@
 var gal_hide_cursor;
+var gal_dbug = 0;
 var gal_hide_zoom_lvl;
 var max_thumb_width=0;
 var gal_progress_bar_max=0;
@@ -34,6 +35,37 @@ var gal_tagging_hold = false;
 var gal_vars_notes_ipp = 6;
 var gal_pixq = 'automatic';
 var gal_brightness_elements = '#gal-reel-now-inner img, .flex-images .item img, .album-photo-wrap img';
+var gal_ai_mode = true;
+var gal_ai_storage_key = 'gal_setting_ai_photos';
+var gal_ai_exists_cache = {};
+
+// deepshow global variables
+var gal_vars_deepshow_time = 3; // Default timing for each photo
+var gal_vars_deepshow_running = false;
+
+var gal_vars_deepshow_tree = new gal_deepshow_TreeNode(gal_vars_aid); // Root node of the tree
+var gal_vars_deepshow_currentNode = gal_vars_deepshow_tree; // Start traversal at root
+let gal_vars_deepshow_totalAlbums = 0; // Get the total number of albums
+let gal_vars_deepshow_visitedAlbumsCount = 0; // Track visited albums
+
+var gal_active_ctr_block = '#album-list-block';
+
+function gal_load_ai_mode(){
+try {
+var xval = localStorage.getItem(gal_ai_storage_key);
+if(xval===null){
+localStorage.setItem(gal_ai_storage_key, 'on');
+gal_ai_mode = true;
+} else {
+gal_ai_mode = xval!='off';
+}
+} catch (err) {
+gal_ai_mode = true;
+}
+}
+
+gal_load_ai_mode();
+
 
 var getQueryString = function ( field, url ) {
 	var href = url ? url : window.location.href;
@@ -42,17 +74,567 @@ var getQueryString = function ( field, url ) {
 	return string ? string[1] : null;
 };
 
+function gal_is_webp_quality(quality){
+return quality=='2k' || quality=='fhd' || quality=='hd';
+}
+
+function gal_thumb_file_from_original(file){
+return file.replace(/\.[^.\/]+$/, '')+'.webp';
+}
+
+function gal_thumb_url_from_original(file){
+return gal_domain+'thumb/'+gal_thumb_file_from_original(file);
+}
+
+function gal_quality_rank(quality){
+if(quality=='hd'){return 1;}
+if(quality=='fhd'){return 2;}
+if(quality=='2k'){return 3;}
+if(quality=='full'){return 4;}
+return 0;
+}
+
+function gal_shortest_side_for_dimensions(fullWidth, fullHeight){
+return Math.min(parseInt(fullWidth, 10) || 0, parseInt(fullHeight, 10) || 0);
+}
+
+function gal_max_generated_quality_for_dimensions(fullWidth, fullHeight){
+var shortestSide = gal_shortest_side_for_dimensions(fullWidth, fullHeight);
+if(shortestSide >= 1440){return '2k';}
+if(shortestSide >= 1080){return 'fhd';}
+if(shortestSide >= 720){return 'hd';}
+return '';
+}
+
+function gal_resolve_quality_for_dimensions(quality, fullWidth, fullHeight){
+if(quality=='full' || !gal_is_webp_quality(quality)){
+return quality;
+}
+
+var width = parseInt(fullWidth, 10);
+var height = parseInt(fullHeight, 10);
+if(isNaN(width) || isNaN(height) || width<1 || height<1){
+return quality;
+}
+
+var maxQuality = gal_max_generated_quality_for_dimensions(width, height);
+if(maxQuality==''){
+return 'full';
+}
+
+if(gal_quality_rank(quality) > gal_quality_rank(maxQuality)){
+return maxQuality;
+}
+
+return quality;
+}
+
+function gal_item_dimensions(item){
+var xitem = $(item);
+if(!xitem.hasClass('item')){
+xitem = xitem.closest('.item');
+}
+
+return {
+fw: parseInt(xitem.attr('data-fw'), 10),
+fh: parseInt(xitem.attr('data-fh'), 10)
+};
+}
+
+function gal_original_file_from_thumb_url(thumbUrl){
+thumbUrl = (thumbUrl || '').split('?')[0];
+var matchedFile = $('img[xsrc="'+thumbUrl+'"], img[src="'+thumbUrl+'"]').first().closest('.item').attr('data-file');
+if(typeof matchedFile=='string' && matchedFile!=''){
+return matchedFile;
+}
+var parts = thumbUrl.split('/thumb/');
+if(parts.length<2){
+return thumbUrl;
+}
+return parts[1];
+}
+
+function gal_quality_file_from_original(file, quality){
+if(gal_is_webp_quality(quality)){
+return file.replace(/\.[^.\/]+$/, '')+'.webp';
+}
+return file;
+}
+
+function gal_quality_url_from_original(file, quality, fullWidth, fullHeight){
+var resolvedQuality = gal_resolve_quality_for_dimensions(quality, fullWidth, fullHeight);
+return gal_domain+resolvedQuality+'/'+gal_quality_file_from_original(file, resolvedQuality);
+}
+
+function gal_quality_url_from_thumb(thumbUrl, quality, fullWidth, fullHeight){
+return gal_quality_url_from_original(gal_original_file_from_thumb_url(thumbUrl), quality, fullWidth, fullHeight);
+}
+
+function gal_quality_url_from_item(item, quality){
+var dimensions = gal_item_dimensions(item);
+var originalFile = gal_item_original_file(item);
+return gal_quality_url_from_original(originalFile, quality, dimensions.fw, dimensions.fh);
+}
+
+function gal_ai_file_from_original(file){
+return file.replace(/\.[^.\/]+$/, '')+'.webp';
+}
+
+function gal_ai_url_from_original(file){
+return gal_domain+'ai/'+gal_ai_file_from_original(file);
+}
+
+function gal_check_ai_photo_exists(file){
+var deferred = $.Deferred();
+var aiUrl = gal_ai_url_from_original(file);
+
+if(Object.prototype.hasOwnProperty.call(gal_ai_exists_cache, aiUrl)){
+deferred.resolve(gal_ai_exists_cache[aiUrl]);
+return deferred.promise();
+}
+
+$.ajax({
+url: aiUrl,
+type: 'HEAD'
+}).done(function(){
+gal_ai_exists_cache[aiUrl] = true;
+deferred.resolve(true);
+}).fail(function(){
+gal_ai_exists_cache[aiUrl] = false;
+deferred.resolve(false);
+});
+
+return deferred.promise();
+}
+
+function gal_display_url_data_from_item(item, quality){
+var dimensions = gal_item_dimensions(item);
+var originalFile = gal_item_original_file(item);
+var normal = gal_quality_url_from_original(originalFile, quality, dimensions.fw, dimensions.fh);
+var ai = gal_ai_url_from_original(originalFile);
+var aiKnown = Object.prototype.hasOwnProperty.call(gal_ai_exists_cache, ai);
+var aiAvailable = aiKnown ? gal_ai_exists_cache[ai]===true : null;
+var preferred = normal;
+var fallback = '';
+
+if(gal_ai_mode){
+if(aiAvailable===true || aiKnown===false){
+preferred = ai;
+fallback = normal;
+}
+}
+
+return {
+normal: normal,
+ai: ai,
+preferred: preferred,
+fallback: fallback
+};
+}
+
+function gal_try_image_fallback(xthis){
+var ximg = $(xthis);
+var fallback = ximg.attr('data-fallback-src') || '';
+if(fallback!='' && ximg.attr('data-ai-fallback-tried')!='1'){
+ximg.attr('data-ai-fallback-tried', '1');
+ximg.attr('src', fallback);
+return true;
+}
+return false;
+}
+
+function gal_set_image_source_with_fallback(ximg, preferred, fallback){
+var $img = $(ximg);
+$img.removeAttr('data-ai-fallback-tried');
+if(fallback){
+$img.attr('data-fallback-src', fallback);
+$img.attr('data-ai-fallback-tried', '0');
+} else {
+$img.removeAttr('data-fallback-src');
+}
+$img.attr('src', preferred);
+}
+
+function gal_update_ai_toggle_button(){
+var xbtn = $('.gal-ai-toggle');
+if(xbtn.length!=1){
+return;
+}
+if(xbtn.hasClass('gal-ai-hidden')){
+return;
+}
+if(gal_ai_mode){
+xbtn.removeClass('gal-ai-off').attr('title', 'AI photos: on');
+} else {
+xbtn.addClass('gal-ai-off').attr('title', 'AI photos: off');
+}
+}
+
+function gal_set_ai_toggle_visibility(file, available){
+var xbtn = $('.gal-ai-toggle');
+if(xbtn.length!=1){
+return;
+}
+
+if(xbtn.attr('data-ai-file')!=file){
+return;
+}
+
+if(!available){
+xbtn.addClass('gal-ai-hidden').removeClass('gal-ai-off').attr('title', 'AI photos unavailable');
+return;
+}
+
+xbtn.removeClass('gal-ai-hidden');
+gal_update_ai_toggle_button();
+}
+
+function gal_refresh_ai_toggle_for_file(file){
+var xbtn = $('.gal-ai-toggle');
+if(xbtn.length!=1){
+return $.Deferred().resolve(false).promise();
+}
+
+xbtn.attr('data-ai-file', file);
+xbtn.addClass('gal-ai-hidden');
+return gal_check_ai_photo_exists(file).done(function(exists){
+if($('.fullscreen-item').attr('data-file')!=file){
+return;
+}
+gal_set_ai_toggle_visibility(file, exists);
+});
+}
+
+function gal_toggle_ai_mode(){
+gal_ai_mode = !gal_ai_mode;
+try {
+localStorage.setItem(gal_ai_storage_key, gal_ai_mode ? 'on' : 'off');
+} catch (err) {}
+gal_update_ai_toggle_button();
+
+if($('.fullscreen').length==1 && $('.fullscreen-item').length==1){
+gal_prepare_fullscreen_item($('.fullscreen-item'));
+gal_prepare_reel_item($('#gal-reel-prev-inner'), gal_quality);
+gal_prepare_reel_item($('#gal-reel-next-inner'), gal_quality);
+}
+
+gal_toast(gal_ai_mode ? 'AI photos enabled' : 'AI photos disabled', gal_ai_mode ? 'green' : '');
+gal_mobile_controls('hide');
+}
+
+function gal_download_filename(file, quality){
+return quality+'-'+gal_quality_file_from_original(file, quality);
+}
+
+var gal_fullscreen_prepare_token = 0;
+
+function gal_item_original_file(item){
+var xitem = $(item);
+if(!xitem.hasClass('item')){
+xitem = xitem.closest('.item');
+}
+
+var originalFile = xitem.attr('data-file');
+if(typeof originalFile=='string' && originalFile!=''){
+return originalFile;
+}
+
+var thumbUrl = xitem.find('img').attr('xsrc') || '';
+return gal_original_file_from_thumb_url(thumbUrl);
+}
+
+function gal_prepare_media_file(file, quality){
+var deferred = $.Deferred();
+file = file || '';
+quality = quality || gal_quality;
+
+if(file==''){
+deferred.reject();
+return deferred.promise();
+}
+
+if(quality=='full'){
+deferred.resolve('ready');
+return deferred.promise();
+}
+
+$.get(gal_domain+'phpix-download.php', {q:quality, f:file, prepare:1}, function(data){
+if($.trim(data)=='ready'){
+deferred.resolve(data);
+} else {
+deferred.reject(data);
+}
+}).fail(function(xhr){
+deferred.reject(xhr);
+});
+
+return deferred.promise();
+}
+
+function gal_prepare_item_media(item, quality){
+var xitem = $(item);
+if(!xitem.hasClass('item')){
+xitem = xitem.closest('.item');
+}
+
+if(xitem.length!=1){
+return $.Deferred().reject().promise();
+}
+
+return gal_prepare_media_file(gal_item_original_file(xitem), quality);
+}
+
+function gal_prepare_reel_item(reelInner, quality){
+var xinner = $(reelInner);
+var ximg = xinner.find('img');
+var xid = parseInt(ximg.attr('data-id'), 10);
+if(isNaN(xid)){
+return $.Deferred().reject().promise();
+}
+
+var xitem = $('#gal-item-'+xid);
+var displayData = gal_display_url_data_from_item(xitem, quality || gal_quality);
+var xfull = displayData.preferred;
+ximg.attr('data-target-src', xfull);
+ximg.off('error.galAi').on('error.galAi', function(){
+if(gal_try_image_fallback(this)){
+return;
+}
+xinner.find('.gal_loading').remove();
+});
+
+return gal_prepare_item_media(xitem, quality).done(function(){
+if(ximg.attr('data-target-src')!=xfull){
+return;
+}
+gal_set_image_source_with_fallback(ximg, xfull, displayData.fallback);
+xinner.find('.gal_loading').remove();
+}).fail(function(){
+if(ximg.attr('data-target-src')!=xfull){
+return;
+}
+xinner.find('.gal_loading').remove();
+});
+}
+
+function gal_prepare_fullscreen_item(item){
+var xitem = $(item);
+if(!xitem.hasClass('item')){
+xitem = xitem.closest('.item');
+}
+
+if(xitem.length!=1){
+return;
+}
+
+var requestToken = ++gal_fullscreen_prepare_token;
+xitem.find('a').attr('href', gal_quality_url_from_item(xitem, gal_quality));
+
+if($('.fullscreen').length==1){
+if($('#gal-reel-now-inner .gal_loading').length==0){
+$('#gal-reel-now-inner').append('<div class="gal_loading"></div>');
+}
+$('.gal-hd-img').addClass('blurred');
+}
+
+gal_prepare_item_media(xitem, gal_quality).done(function(){
+if(requestToken!=gal_fullscreen_prepare_token){
+return;
+}
+
+xitem.find('a').attr('href', gal_quality_url_from_item(xitem, gal_quality));
+fullscreen_box();
+}).fail(function(){
+if(requestToken!=gal_fullscreen_prepare_token){
+return;
+}
+$('#gal-reel-now-inner .gal_loading').remove();
+$('.gal-hd-img').removeClass('blurred');
+gal_toast('Loading failed!!', 'red');
+});
+}
+
+
+
+// deepshow specific functions
+
+function gal_deepshow_countAlbums(node) {
+    let count = 1; // count the current node
+    for (let child of node.children) {
+        count += gal_deepshow_countAlbums(child); // recursively count children
+    }
+    return count;
+}
+
+function gal_deepshow_TreeNode(id) {
+    this.id = id;             // Unique identifier for the folder
+    this.children = [];       // Array of child nodes
+    this.parent = null;       // Reference to the parent node (optional)
+}
+
+function gal_deepshow_addSubfoldersToTree(parentNode, subfolderIds) {
+    subfolderIds.forEach(subfolderId => {
+        let childNode = new gal_deepshow_TreeNode(subfolderId);
+        childNode.parent = parentNode; // Set the parent reference
+        parentNode.children.push(childNode);
+    });
+}
+
+function gal_deepshow_traverseNext() {
+    // If the current node has children, move to the first child
+    if (gal_vars_deepshow_currentNode.children.length > 0) {
+        gal_vars_deepshow_currentNode = gal_vars_deepshow_currentNode.children[0];
+    } 
+    // If no children, check for siblings
+    else if (gal_vars_deepshow_currentNode.parent) {
+        let siblings = gal_vars_deepshow_currentNode.parent.children;
+        let currentIndex = siblings.indexOf(gal_vars_deepshow_currentNode);
+
+        if (currentIndex < siblings.length - 1) {
+            // Move to the next sibling
+            gal_vars_deepshow_currentNode = siblings[currentIndex + 1];
+        } else {
+            // No siblings left, backtrack to parent's sibling
+            gal_deepshow_backtrackToNextSibling(gal_vars_deepshow_currentNode.parent);
+        }
+    } 
+    // No more nodes to process (end of traversal)
+    else {
+     //   gal_toast("Traversal complete!");
+        gal_deepshow_end();
+    }
+
+    // Process the next folder
+	// load next album and write next condition in after loading fn
+	var nurl = gal_domain+''+albumFILE+'?aid='+gal_vars_deepshow_currentNode.id;
+	gal_gotoURL(nurl);
+}
+
+function gal_deepshow_backtrackToNextSibling(node) {
+    if (node.parent) {
+        let siblings = node.parent.children;
+        let currentIndex = siblings.indexOf(node);
+
+        if (currentIndex < siblings.length - 1) {
+            gal_vars_deepshow_currentNode = siblings[currentIndex + 1];
+        } else {
+            gal_deepshow_backtrackToNextSibling(node.parent);
+        }
+    } else {
+     //   gal_toast("Traversal complete!");
+        gal_deepshow_end();
+    }
+}
+
+function gal_deepshow_begins(time) {
+gal_vars_deepshow_running = true; // Indicate that deepshow is running
+gal_vars_deepshow_time = time; // Set display time for photos
+gal_toast('DeepShow started!', 'gradient', 5000);
+
+// Initialize albumQueue with the current album and its subfolders
+gal_deepshow_initializeAlbumQueue();
+}
+
+function gal_update_ctr_block(){
+if($('#album-list-block').css('display') == 'block'){
+gal_active_ctr_block = '#album-list-block';
+}
+
+if($('#album-pics-block').css('display') == 'block'){
+gal_active_ctr_block = '#album-pics-block';
+}
+
+
+if($('#album-search-block').css('display') == 'block'){
+gal_active_ctr_block = '#album-search-block';
+}
+}
+
+function gal_deepshow_initializeAlbumQueue() {
+
+gal_update_ctr_block();
+
+// Fetch subfolder URLs (preloaded data)
+var folders = [];
+jQuery(gal_active_ctr_block+' b[xurl]').each(function () {
+const albumId = jQuery(this).attr('xurl');
+folders.push(albumId);
+});
+
+gal_deepshow_addSubfoldersToTree(gal_vars_deepshow_currentNode, folders);
+gal_vars_deepshow_totalAlbums = gal_deepshow_countAlbums(gal_vars_deepshow_tree); // Get the total number of albums
+
+// Start the slideshow
+setTimeout(gal_deepshow_play, 300);
+
+}
+
+
+function log_errors(){
+console.log('Current Node ID:', gal_vars_deepshow_currentNode.id);
+console.log('Current Node Children:', gal_vars_deepshow_currentNode.children);
+console.log('albumQueue:', JSON.stringify(gal_vars_deepshow_tree, (key, value) => {
+    return key === 'parent' ? undefined : value;
+}));
+}
+
+
+function gal_deepshow_play(){
+
+gal_vars_deepshow_visitedAlbumsCount++; // Increment counter when visiting an album
+
+if ($('#album-pics-block .gal > li').length > 0) { // if there are photos in album
+$('#gal-item-0 > a').trigger('click');
+gal_slideshow_begins(gal_vars_deepshow_time);
+} else { // if no photos
+gal_deepshow_load_next();
+}
+}
+
+
+function gal_deepshow_load_next(){
+gal_vars_slideshow = false;
+gal_stop_slideshow();
+
+// close photo viewer
+if($('.gal-zoomed').length==0){
+setTimeout("gal_remove_fullscreen_container()", 300);
+} else {
+gal_close_zoom();
+}
+
+
+gal_deepshow_traverseNext();
+
+}
+
+
+function gal_deepshow_end() {
+gal_vars_slideshow = false;
+
+
+gal_vars_deepshow_running = false;
+gal_vars_deepshow_tree = new gal_deepshow_TreeNode(gal_vars_aid); // Reset tree
+gal_vars_deepshow_currentNode = gal_vars_deepshow_tree; // Reset current node
+gal_vars_deepshow_visitedAlbumsCount = 0;
+gal_vars_deepshow_totalAlbums = 0;
+
+gal_stop_slideshow();
+gal_toast('Deepshow ended', 'blinker red', 5000);
+}
+
+// end deepshow
 
 function gal_fitscreen(){
 gal_mobile_controls('hide');
 if(gal_vars_expand=='disabled'){
 gal_vars_expand = 'enabled';
 jQuery('body').addClass('gal-zoomfit');
-gal_toast('CROP to FIT enabled');
+gal_toast('CROP to FIT enabled', 'green');
 } else {
 gal_vars_expand = 'disabled';
 jQuery('body').removeClass('gal-zoomfit');
-gal_toast('CROP to FIT diabled');
+gal_toast('CROP to FIT diabled', 'red');
 }
 $(window).trigger('resize');
 }
@@ -255,13 +837,13 @@ if(window.devicePixelRatio<=1){ // for desktop browsers
 	gal_vars_thumbsize = 100;
 	} else if(cw >= 720){
 	gal_vars_thumbsize = 70;
-	gal_quality = 'fhd';
+	gal_quality = '2k';
 	} else if(cw >= 480){
 	gal_vars_thumbsize = 50;
-	gal_quality = 'hd';
+	gal_quality = 'fhd';
 	} else {
 	gal_vars_thumbsize = 30;
-	gal_quality = 'qhd';
+	gal_quality = 'hd';
 	}
 } else { // mobiles and tablets
 	if(cw >= 1920){
@@ -269,13 +851,13 @@ if(window.devicePixelRatio<=1){ // for desktop browsers
 	gal_quality = 'full';
 	} else if(cw >= 1080){
 	gal_vars_thumbsize = 40;
-	gal_quality = 'fhd';
+	gal_quality = '2k';
 	} else if(cw >= 720){
 	gal_vars_thumbsize = 40;
-	gal_quality = 'hd';
+	gal_quality = 'fhd';
 	} else {
 	gal_vars_thumbsize = 30;
-	gal_quality = 'qhd';
+	gal_quality = 'hd';
 	}
 
 }
@@ -393,6 +975,10 @@ $('.album-list b[xurl="'+xnaid+'"]').trigger('click');
 
 }
 
+if(gal_vars_deepshow_running==true){
+gal_deepshow_initializeAlbumQueue();
+}
+
 });
 }
 
@@ -424,8 +1010,8 @@ album_notes_readmore();
 function album_notes_readmore(){
 $(this).css('overflow', 'auto');
 $('.album-note-box').each( function() {
-    if ($(this).prop('scrollHeight') > $(this).prop('clientHeight')){
-    $('.album-note-more', this).css('display', 'block');
+if ($(this).prop('scrollHeight') > $(this).prop('clientHeight')){
+$('.album-note-more', this).css('display', 'block');
 	} else {
 	$('.album-note-more', this).css('display', 'none');
 	}
@@ -459,6 +1045,7 @@ window.history.pushState( {} , 'phpix', gal_domain+''+albumFILE );
 function album_search_mode(){
 $('#album-list-block, #album-pics-block, #album-notes-block').hide();
 $('#album-search-block').show();
+$('#album-pics-block').html('');
 
 $('title').html('Search albums and photos');
 album_nosearch_ui();
@@ -478,8 +1065,12 @@ window.history.pushState( {} , 'phpix', gal_domain+''+albumFILE+'?tab=search&f='
 }
 
 var sdata = '';
-spotsArray.forEach(function(v,i) {
-sdata = sdata+'<a href="'+gal_domain+''+albumFILE+'?tab=search&f='+v+'&t=spots" onclick="album_set_spot(\''+v+'\', event)">'+v+'</a>';
+spotsArray.forEach(function(v,i) { 
+if(spotsSort[i]!=0 && i<50){
+const escapedValue = v.replace(/'/g, "\\'"); // Escaping for JavaScript strings
+const htmlEscapedValue = v.replace(/'/g, "&#39;"); // Escaping for HTML
+sdata = sdata+'<a href="'+gal_domain+''+albumFILE+'?tab=search&f='+v+'&t=spots" onclick="album_set_spot(\''+escapedValue+'\', event)">'+htmlEscapedValue+'</a>';
+}
 });
 	
 var xhtml = '<div id="search-info" class="search-ctr">\
@@ -511,6 +1102,8 @@ if(keyword===null){keyword='';}
 if(keyword.length < 3){
 $('#search-info > h2').html('Please enter at least 3 charectors!');
 return false;
+} else {
+keyword = encodeURIComponent(keyword);
 }
 
 var keytype = $('.search-form [name="t"]').val();
@@ -619,16 +1212,19 @@ window.history.pushState( {} , 'phpix', gal_domain+''+albumFILE );
 
 function gal_close_zoom(){
 jQuery('.gal-zoomed').remove();
-gal_toast('ZOOM deactivated!');
+gal_toast('ZOOM deactivated!', 'red');
 }
 
 function start_zoom(){
-gal_toast('PAN and ZOOM activated');
+gal_toast('PAN and ZOOM activated', 'green');
 
 var cid = $('.fullscreen-item').attr('data-count');
-var xthumb = $('.fullscreen-item > a > img').attr('src');
-var ximg = xthumb.replace('/thumb/','/'+gal_quality+'/');
-$('.gal-bg').append('<div class="gal-zoomed"><div class="gal-zoomed-inner"><img id="gal-zoomed-img" style="'+gal_get_css(cid)+'" src="'+ximg+'"></div></div>');
+var displayData = gal_display_url_data_from_item($('.fullscreen-item'), gal_quality);
+$('.gal-bg').append('<div class="gal-zoomed"><div class="gal-zoomed-inner"><img id="gal-zoomed-img" style="'+gal_get_css(cid)+'" src=""></div></div>');
+$('#gal-zoomed-img').on('error.galAi', function(){
+gal_try_image_fallback(this);
+});
+gal_set_image_source_with_fallback($('#gal-zoomed-img'), displayData.preferred, displayData.fallback);
 
 
 const elem2 = document.getElementById('gal-zoomed-img');
@@ -671,7 +1267,6 @@ if (window.panzoom !== undefined){
 
 
 function gal_shift_next(){
-//$('.dbug').append('<p>'+gal_quality+'</p>');
 $('.gal-zoomed').remove();
 
 var cid = parseInt(jQuery('#gal-reel-next img').attr('data-id'));
@@ -691,14 +1286,13 @@ var next_id = cid + 1;
 if(cid==(maxid-1)){next_id = 0;}
 
 var next_thumb = $('#gal-item-'+next_id+' img').attr('xsrc');
-var next_url = next_thumb.replace('/thumb/', '/'+gal_quality+'/');
 
 $('.fullscreen-item').removeClass('fullscreen-item');
 $('#gal-item-'+cid).addClass('fullscreen-item');
 
 var xhtml = '<div id="gal-reel-next"><div id="gal-reel-next-inner"><img style="'+gal_get_css(next_id)+'" data-id="'+next_id+'" src="'+next_thumb+'"><div class="gal_loading"></div></div></div>';
 $('#gal-reel').append(xhtml);
-$('.gal-reel-preloader').append('<img onload="gal_preload_complete(this)" src="'+next_url+'">');
+gal_prepare_reel_item($('#gal-reel-next-inner'), gal_quality);
 panzoom.pan(-$(window).width(), 0, { animate: false });
 gal_sharer();
 gal_reset_navigation();
@@ -707,9 +1301,10 @@ gal_ajax_exif();
 
 var xphoto = $('#gal-item-'+cid+' img').attr('src');
 var aid = getQueryString('aid');
-var uri = xphoto.split('/thumb/');
-$('title').html('PHPix photo - '+uri[1]);
-window.history.pushState( {} , 'phpix', gal_domain+'phpix-alt.php?u='+uri[1] );
+var xfile = $('#gal-item-'+cid).attr('data-file');
+$('title').html('PHPix photo - '+xfile);
+window.history.pushState( {} , 'phpix', gal_domain+'phpix-alt.php?u='+xfile );
+gal_refresh_ai_toggle_for_file(xfile);
 gal_set_thumb();
 gal_xtag_reinit();
 
@@ -721,10 +1316,7 @@ setTimeout(function(){gal_random_animation();},600);
 
 function gal_preload_complete(xthis){
 var newSRC = $(xthis).attr('src');
-var thumbSRC = newSRC.replace('/full/', '/thumb/');
-thumbSRC = thumbSRC.replace('/fhd/', '/thumb/');
-thumbSRC = thumbSRC.replace('/hd/', '/thumb/');
-thumbSRC = thumbSRC.replace('/qhd/', '/thumb/');
+var thumbSRC = $(xthis).attr('data-thumb-src');
 $(xthis).removeAttr('onload');
 
 var isXtag = $('#gal-reel img[src="'+thumbSRC+'"]').closest('div').attr('id');
@@ -760,14 +1352,13 @@ var prev_id = cid - 1;
 if(cid==0){prev_id = maxid-1;}
 
 var prev_thumb = $('#gal-item-'+prev_id+' img').attr('xsrc');
-var prev_url = prev_thumb.replace('/thumb/', '/'+gal_quality+'/');
 
 $('.fullscreen-item').removeClass('fullscreen-item');
 $('#gal-item-'+cid).addClass('fullscreen-item');
 
 var xhtml = '<div id="gal-reel-prev"><div id="gal-reel-prev-inner"><img style="'+gal_get_css(prev_id)+'" data-id="'+prev_id+'" src="'+prev_thumb+'"><div class="gal_loading"></div></div></div>';
 $('#gal-reel').prepend(xhtml);
-$('.gal-reel-preloader').append('<img onload="gal_preload_complete(this)" src="'+prev_url+'">');
+gal_prepare_reel_item($('#gal-reel-prev-inner'), gal_quality);
 panzoom.pan(-$(window).width(), 0, { animate: false });
 gal_sharer();
 gal_reset_navigation();
@@ -776,9 +1367,10 @@ gal_ajax_exif();
 
 var xphoto = $('#gal-item-'+cid+' img').attr('src');
 var aid = getQueryString('aid');
-var uri = xphoto.split('/thumb/');
-$('title').html('PHPix photo - '+uri[1]);
-window.history.pushState( {} , 'phpix', gal_domain+'phpix-alt.php?u='+uri[1] );
+var xfile = $('#gal-item-'+cid).attr('data-file');
+$('title').html('PHPix photo - '+xfile);
+window.history.pushState( {} , 'phpix', gal_domain+'phpix-alt.php?u='+xfile );
+gal_refresh_ai_toggle_for_file(xfile);
 gal_set_thumb();
 gal_xtag_reinit();
 if(gal_slide_animation=='any-random'){
@@ -841,7 +1433,7 @@ if($('.gal-thumbs-ctr').css('display')!='none'){
 gal_thumbs_UI();
 $('.gal-thumbs-ctr').show();
 }
-new flexImages({selector: '.gal', rowHeight: 150});
+    new flexImages({selector: '.gal', rowHeight: 150});
 $('.album-title').html($(window).width()+'x'+$(window).height());
 
 if($('#album-notes-block').css('display')=='block'){
@@ -915,9 +1507,9 @@ gal_preopen_gallery();
 
 jQuery(document).ready(function($){
 
-// debugbox for debugging
-//$('body').append('<div class="dbug"></div>');
-
+if(gal_dbug){
+$('body').append('<div class="dbug"></div>');
+}
 
 gal_ready_settings();
 
@@ -953,13 +1545,6 @@ document.location.href = xurl;
 }, 500);
 });
 }
-
-
-
-//gal_demo();
-//printExternal('http://localhost/family/original/(100).jpg');
-
-
 
 
 
@@ -1020,11 +1605,11 @@ jQuery('body').on('keyup', null, 'shift+h', function(){
 	if(jQuery('.gal-xtag-toggle').length==1){
 if(gal_tagging_hold==false){
 	gal_tagging_hold = true;
-	gal_toast('Tagging will be auto enabled.');
+	gal_toast('Tagging will be auto enabled.', 'green');
 	gal_xtag_enable();
 } else {
 	gal_tagging_hold = false;
-	gal_toast('Tagging will not be auto enabled.');
+	gal_toast('Tagging will not be auto enabled.', 'red');
 	gal_xtag_disable();
 }
 	}
@@ -1071,9 +1656,8 @@ gal_brightness();
 jQuery('body').on('keyup', null, 'shift+x', function(){
 if(jQuery('#gal-reel-now .gal_loading').length==0 && jQuery('.gal-crop-ctr').length==0 && jQuery('.gal-progress-out').length==0){
 mlib_rcrop_close();
-var xurl = jQuery('.fullscreen-item > a > img').attr('src');
-var xxurl = xurl.split('/thumb/');
-gal_crop_photo_UI(xxurl[1]);
+var xurl = jQuery('.fullscreen-item').attr('data-file');
+gal_crop_photo_UI(xurl);
 }
 });
 
@@ -1104,8 +1688,9 @@ $('.gal-nav').hide();
 $('body').on('click', '.gal > li > a', function(e){
 e.preventDefault();
 $('.fullscreen-item').removeClass('fullscreen-item');
-$(this).closest('li').addClass('fullscreen-item');
-fullscreen_box();
+var xitem = $(this).closest('li');
+xitem.addClass('fullscreen-item');
+gal_prepare_fullscreen_item(xitem);
 });
 
 
@@ -1118,6 +1703,7 @@ screenfull.exit();
 }*/
 
 if($('.gal-zoomed').length==0){
+if(gal_vars_deepshow_running==true){gal_deepshow_end();}
 setTimeout("gal_remove_fullscreen_container()", 300);
 } else {
 gal_close_zoom();
@@ -1132,7 +1718,12 @@ toggleFullscreen('#flscrn');
 
 // toggle the slideshow
 $('body').on('click', '.gal-play', function(){
-gal_prepare_slideshow();
+if($(this).hasClass('albtn-deepshow')){
+gal_prepare_slideshow('yes');
+} else {
+gal_prepare_slideshow('no');
+}
+
 });
 
 
@@ -1206,57 +1797,58 @@ $('body').addClass(gal_vars_orientation);
 }
 
 
-function gal_prepare_slideshow(){
-if(jQuery('.gal-play').hasClass('gal-pause')){
-gal_vars_slideshow = false;
-gal_stop_slideshow();
+function gal_prepare_slideshow(deep_show = 'no'){
+if($('.gal-play').hasClass('gal-pause')){
+		if(gal_vars_deepshow_running==true){
+		gal_toast('DeepShow paused!', 'purple paused', 24*60*60*1000);
+		} else {
+		// gal_toast('SlideShow paused!', 'gold paused', 24*60*60*1000);
+		}
+	gal_vars_slideshow = false;
+	gal_stop_slideshow();
 } else {
+if(gal_vars_deepshow_running==true){
+gal_toast('DeepShow resumed!', 'gradient', 5000);
+gal_slideshow_begins(gal_vars_deepshow_time);
+} else {
+if(deep_show=='no'){
+var fn = 'gal_slideshow_begins';
+var txt = '<h2>SlideShow</h2><p>Play all photos of this album only.</p>';
+} else {
+var fn = 'gal_deepshow_begins';
+var txt = '<h2><b>DeepShow</b></h2><p>Automatically play this album and all sub albums.</p>';
+}
 
-
-var xhtml = '<p style="text-align:center;">How much time should each photo be displayed?</p><div class="gal-slide-timing">\
-<a onclick="gal_slideshow_begins(3, this)">3 seconds</a></li>\
-<a onclick="gal_slideshow_begins(4, this)">4 seconds</a>\
-<a onclick="gal_slideshow_begins(5, this)">5 seconds</a>\
-<a onclick="gal_slideshow_begins(6, this)">6 seconds</a>\
-<a onclick="gal_slideshow_begins(7, this)">7 seconds</a>\
-<a onclick="gal_slideshow_begins(8, this)">8 seconds</a>\
-<a onclick="gal_slideshow_begins(9, this)">9 seconds</a>\
-<a onclick="gal_slideshow_begins(10, this)">10 seconds</a>\
-<a onclick="gal_slideshow_begins(15, this)">15 seconds</a>\
-<a onclick="gal_slideshow_begins(20, this)">20 seconds</a>\
-<a onclick="gal_slideshow_begins(30, this)">30 seconds</a>\
-<a onclick="gal_slideshow_begins(60, this)">1 Minute</a>\
+var xhtml = '<div class="deepshow" style="text-align:center;">'+txt+'<p>How much time should each photo be displayed?</p></div><div class="gal-slide-timing">\
+<a onclick="'+fn+'(3)">3 seconds</a>\
+<a onclick="'+fn+'(4)">4 seconds</a>\
+<a onclick="'+fn+'(5)">5 seconds</a>\
+<a onclick="'+fn+'(7)">7 seconds</a>\
+<a onclick="'+fn+'(10)">10 seconds</a>\
+<a onclick="'+fn+'(15)">15 seconds</a>\
+<a onclick="'+fn+'(20)">20 seconds</a>\
+<a onclick="'+fn+'(30)">30 seconds</a>\
+<a onclick="'+fn+'(60)">1 Minute</a>\
 </div>';
-phpl_alert(xhtml, 'Please choose...');
-
-/*
-gal_vars_slide_time = parseInt(prompt('How many seconds for each slide?', '5'));
-if(gal_vars_slide_time>=2){
-gal_vars_slideshow = true;
-gal_start_slideshow();
-} else if(!isNaN(gal_vars_slide_time)){
-gal_toast('Number must be greater than 1. Please Retry.');
-} else {
-gal_toast('Only numbers are accepted. Please Retry.');
+phpl_alert(xhtml, 'Please choose...', undefined, 'slideshow-time-chooser');
 }
-*/
-
-
 }
 }
 
 
-function gal_slideshow_begins(xtime, xthis){
+function gal_slideshow_begins(xtime){
 gal_vars_slide_time = xtime;
 gal_vars_slideshow = true;
-phpl_close_alert($(xthis).closest('.phpl-alert-ctr').attr('id'));
+phpl_close_alert('slideshow-time-chooser');
 gal_mobile_controls('hide');
 gal_start_slideshow();
 }
 
 
 function gal_start_slideshow(){
-gal_toast('Slideshow begins!');
+if(gal_vars_deepshow_running==false){
+gal_toast('Slideshow begins!', 'blinker green', 5000);
+}
 gal_preloader_UI();
 jQuery('.gal-play').addClass('gal-pause');
 jQuery('.gal-bg').append('<div class="gal-progress-out"><div class="gal-progress"></div></div>');
@@ -1264,7 +1856,9 @@ gal_slideshow();
 }
 
 function gal_stop_slideshow(){
-gal_toast('Slideshow stopped!');
+if(gal_vars_deepshow_running==false && gal_vars_slideshow == true){
+gal_toast('Slideshow stopped!', 'blinker red', 5000);
+}
 jQuery('.gal-preloader').remove();
 jQuery('.gal-play').removeClass('gal-pause');
 jQuery('.gal-progress-out').remove();
@@ -1296,7 +1890,8 @@ gal_vars_slide_timer = setTimeout("gal_slideshow()", 1000);
 
 function gal_remove_fullscreen_container(){
 jQuery('#fullscreen').remove();
-$('.album-ctr, .album-bar-ctr, .gal-ctr, #album-sidebar').show();
+jQuery('.fullscreen-item').removeClass('fullscreen-item');
+$('.album-ctr, .album-bar-ctr, .gal-ctr, #album-sidebar, #search-info').show();
 jQuery('.no-scroll').removeClass('no-scroll');
 gal_stop_slideshow();
 // some bug causes window to be scaled again, hence reinitialized to fix it
@@ -1313,14 +1908,27 @@ $('.gal-prev, .gal-next').fadeTo(10, 0.01);
 
 
 function gal_download_options(xurl){
-var xhtml = '<table class="phpl-alert-table">\
-<tr><td><b>ORIGINAL</b> Maximum resolution</td><td id="gal-link-full"><a onclick="return gal_prepare_download(this)" data-q="full" href="'+gal_domain+'phpix-download.php?q=full&f='+xurl+'" download="full-'+xurl+'">Create Download</a></td></tr>\
-<tr><td><b>FULL HD</b> 1080 pixels</td><td id="gal-link-fhd"><a onclick="return gal_prepare_download(this)" data-q="fhd" href="'+gal_domain+'phpix-download.php?q=fhd&f='+xurl+'" download="fhd-'+xurl+'">Create Download</a></td></tr>\
-<tr><td><b>HD 720p</b> 720 pixels</td><td id="gal-link-hd"><a onclick="return gal_prepare_download(this)" data-q="hd" href="'+gal_domain+'phpix-download.php?q=hd&f='+xurl+'" download="hd-'+xurl+'">Create Download</a></td></tr>\
-<tr><td><b>QHD 480p</b> 480 pixels</td><td id="gal-link-qhd"><a onclick="return gal_prepare_download(this)" data-q="qhd" href="'+gal_domain+'phpix-download.php?q=qhd&f='+xurl+'" download="qhd-'+xurl+'">Create Download</a></td></tr>\
+var regularHtml = '<table class="phpl-alert-table">\
+<tr><td><b>ORIGINAL</b> Maximum resolution</td><td id="gal-link-full"><a onclick="return gal_prepare_download(this)" data-q="full" href="'+gal_domain+'phpix-download.php?q=full&f='+xurl+'" download="'+gal_download_filename(xurl, 'full')+'">Create Download</a></td></tr>\
+<tr><td><b>2K</b> 1440 pixels</td><td id="gal-link-2k"><a onclick="return gal_prepare_download(this)" data-q="2k" href="'+gal_domain+'phpix-download.php?q=2k&f='+xurl+'" download="'+gal_download_filename(xurl, '2k')+'">Create Download</a></td></tr>\
+<tr><td><b>FULL HD</b> 1080 pixels</td><td id="gal-link-fhd"><a onclick="return gal_prepare_download(this)" data-q="fhd" href="'+gal_domain+'phpix-download.php?q=fhd&f='+xurl+'" download="'+gal_download_filename(xurl, 'fhd')+'">Create Download</a></td></tr>\
+<tr><td><b>HD 720p</b> 720 pixels</td><td id="gal-link-hd"><a onclick="return gal_prepare_download(this)" data-q="hd" href="'+gal_domain+'phpix-download.php?q=hd&f='+xurl+'" download="'+gal_download_filename(xurl, 'hd')+'">Create Download</a></td></tr>\
 </table>\
 <p style="text-align:center;margin:10px auto 0 auto;">For custom size and cropping, <a href="javascript:void(0)" onclick="gal_crop_photo_UI(\''+xurl+'\')">click here</a></p>';
-phpl_alert(xhtml, 'Download options');
+
+phpl_alert('<div class="gal_loading"></div>', 'Download options');
+gal_check_ai_photo_exists(xurl).done(function(exists){
+if(exists){
+var aiUrl = gal_ai_url_from_original(xurl);
+var aiFile = gal_ai_file_from_original(xurl);
+var aiHtml = '<table class="phpl-alert-table">\
+<tr><td><b>AI PHOTO</b> Processed WebP version</td><td><a href="'+aiUrl+'" download="'+aiFile+'">Download Now!</a></td></tr>\
+</table>';
+$('.phpl-alert-box-middle').html(aiHtml + regularHtml);
+} else {
+$('.phpl-alert-box-middle').html(regularHtml);
+}
+});
 }
 
 
@@ -1385,7 +1993,7 @@ function gal_crop_rotate_range(xval){
 clearTimeout(gal_vars_rotate_preview_timer);
 $('#gal-crop-settings-rotate-ctr span').html('Rotate : '+xval+'&deg;');
 $('#gal-crop').css('transform', 'rotate('+xval+'deg)');
-gal_toast('Rotate preview...');
+gal_toast('Rotate preview...', 'teal');
 gal_vars_rotate_preview_timer = setTimeout('gal_crop_css_reset()', 4000);
 }
 
@@ -1404,7 +2012,7 @@ $('#gal-crop').css('transform', 'scaleX(-1)');
 if(cbox=='both'){
 $('#gal-crop').css('transform', 'scaleX(-1) scaleY(-1)');
 }
-gal_toast('Flip preview...');
+gal_toast('Flip preview...', 'teal');
 gal_vars_rotate_preview_timer = setTimeout('gal_crop_css_reset()', 4000);
 }
 
@@ -1468,19 +2076,19 @@ function flipImage(srcBase64, flipH, flipV, callback) {
   let ctx = canvas.getContext("2d");
   let img = new Image();
   
-    img.onload = function () {
+img.onload = function () {
 	canvas.width = img.width;
 	canvas.height = img.height;
 	
-	    var scaleH = flipH ? -1 : 1, // Set horizontal scale to -1 if flip horizontal
-        scaleV = flipV ? -1 : 1, // Set verical scale to -1 if flip vertical
-        posX = flipH ? img.width * -1 : 0, // Set x position to -100% if flip horizontal 
-        posY = flipV ? img.height * -1 : 0; // Set y position to -100% if flip vertical
+	var scaleH = flipH ? -1 : 1, // Set horizontal scale to -1 if flip horizontal
+scaleV = flipV ? -1 : 1, // Set verical scale to -1 if flip vertical
+posX = flipH ? img.width * -1 : 0, // Set x position to -100% if flip horizontal 
+posY = flipV ? img.height * -1 : 0; // Set y position to -100% if flip vertical
 	
-    ctx.save(); // Save the current state
-    ctx.scale(scaleH, scaleV); // Set scale to flip the image
-    ctx.drawImage(img, posX, posY, img.width, img.height); // draw the image
-    ctx.restore(); // Restore the last saved state
+ctx.save(); // Save the current state
+ctx.scale(scaleH, scaleV); // Set scale to flip the image
+ctx.drawImage(img, posX, posY, img.width, img.height); // draw the image
+ctx.restore(); // Restore the last saved state
 	callback(canvas.toDataURL());
 	}
 img.src = srcBase64;
@@ -1499,14 +2107,14 @@ function rotate(srcBase64, degrees, callback) {
 	var box_dimention = image.width;
 	}
 
-    canvas.width = box_dimention;
-    canvas.height = box_dimention;
+canvas.width = box_dimention;
+canvas.height = box_dimention;
 
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate(degrees * Math.PI / 180);
-    ctx.drawImage(image, image.width / -2, image.height / -2);
+ctx.translate(canvas.width / 2, canvas.height / 2);
+ctx.rotate(degrees * Math.PI / 180);
+ctx.drawImage(image, image.width / -2, image.height / -2);
 
-    callback(canvas.toDataURL());
+callback(canvas.toDataURL());
   };
 
   image.src = srcBase64;
@@ -1523,15 +2131,15 @@ gal_rcrop_reApply();
 }
 
 function formatBytes(bytes, decimals = 2) {
-    if (bytes === 0) return '0 Bytes';
+if (bytes === 0) return '0 Bytes';
 
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+const k = 1024;
+const dm = decimals < 0 ? 0 : decimals;
+const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
+const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
 function gal_rcrop_reApply(){
@@ -1545,19 +2153,19 @@ gal_set_output_quality();
 }
 
 function isNumber(evt) {
-    evt = (evt) ? evt : window.event;
-    var charCode = (evt.which) ? evt.which : evt.keyCode;
-    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
-        return false;
-    }
-    return true;
+evt = (evt) ? evt : window.event;
+var charCode = (evt.which) ? evt.which : evt.keyCode;
+if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+return false;
+}
+return true;
 }
 
 
 function scrollSmoothToBottom (id) {
    var div = document.getElementById(id);
    $('#' + id).animate({
-      scrollTop: div.scrollHeight - div.clientHeight
+  scrollTop: div.scrollHeight - div.clientHeight
    }, 500);
 }
 
@@ -1572,11 +2180,10 @@ var srcOriginal = $('#gal-crop').rcrop('getDataURL');
 var srcOriginal = $('#gal-crop').rcrop('getDataURL', deviceWidth, deviceHeight);
 }
 
-var xthumb = $('.fullscreen-item > a > img').attr('src');
-var uri = xthumb.split('/thumb/');
+var xfile = $('.fullscreen-item').attr('data-file');
 
-$('.gal-setting-cropped-pic').html('<p>'+formatBytes(srcOriginal.length/1.33)+' approx</p><a class="gal-btn green" href="'+blobify(srcOriginal)+'" download="custom-'+uri[1]+'">DOWNLOAD</a><img src="'+srcOriginal+'">');
-gal_toast('Cropped successfully');
+$('.gal-setting-cropped-pic').html('<p>'+formatBytes(srcOriginal.length/1.33)+' approx</p><a class="gal-btn green" href="'+blobify(srcOriginal)+'" download="custom-'+xfile+'">DOWNLOAD</a><img src="'+srcOriginal+'">');
+gal_toast('Cropped successfully', 'green');
 setTimeout(function(){
 scrollSmoothToBottom('gal-crop-settings');
 }, 1000);
@@ -1591,16 +2198,16 @@ const byteCharacters = atob(base64ImageData.replace(/^data:image\/(png|jpeg|jpg)
 const byteArrays = [];
 
 for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
-    const slice = byteCharacters.slice(offset, offset + 1024);
+const slice = byteCharacters.slice(offset, offset + 1024);
 
-    const byteNumbers = new Array(slice.length);
-    for (let i = 0; i < slice.length; i++) {
-        byteNumbers[i] = slice.charCodeAt(i);
-    }
+const byteNumbers = new Array(slice.length);
+for (let i = 0; i < slice.length; i++) {
+byteNumbers[i] = slice.charCodeAt(i);
+}
 
-    const byteArray = new Uint8Array(byteNumbers);
+const byteArray = new Uint8Array(byteNumbers);
 
-    byteArrays.push(byteArray);
+byteArrays.push(byteArray);
 }
 const blob = new Blob(byteArrays, {type: contentType});
 const blobUrl = URL.createObjectURL(blob);
@@ -1640,9 +2247,9 @@ $('#gal-crop').rcrop({
 	minSize:[minWidth,minHeight],
 	preserveAspectRatio:false,
 	preview: {
-        display: true,
-        size : [minWidth,minHeight],
-    }
+display: true,
+size : [minWidth,minHeight],
+}
 	});
 
 } else {
@@ -1652,9 +2259,9 @@ $('#gal-crop').rcrop({
 	minSize:[minWidth,minHeight],
 	preserveAspectRatio:true,
 	preview: {
-        display: true,
-        size : [minWidth,minHeight],
-    }
+display: true,
+size : [minWidth,minHeight],
+}
 	});
 	
 }
@@ -1663,19 +2270,20 @@ $('#gal-crop').rcrop({
 
 
 function gal_prepare_download(xthis){
-var xurl = $(xthis).attr('href');
-var xParams = new URLSearchParams(xurl);
-var xq = $(xthis).attr('data-q');
+var finalURL = new URL($(xthis).attr('href'), window.location.href);
+var requestURL = new URL(finalURL.toString());
 var ghtml = $(xthis).parent().html();
 var gid = $(xthis).parent().attr('id');
+requestURL.searchParams.set('prepare', '1');
 $('#'+gid).html('<b>Processing...</b>');
-$.get( xurl ,function(data) {
+$.get( requestURL.toString() ,function(data) {
 $('#'+gid).html(ghtml);
-var newURL = gal_domain+''+xq+'/'+xParams.get('f');
-$('#'+gid+' > a').attr('href', newURL);
+$('#'+gid+' > a').attr('href', finalURL.toString());
 $('#'+gid+' > a').removeAttr('onclick');
 $('#'+gid+' > a').html('Download Now!');
 $('#'+gid+' > a').addClass('gal-download-ready');
+}).fail(function() {
+$('#'+gid).html(ghtml);
 });
 return false;
 }
@@ -1683,21 +2291,24 @@ return false;
 // adding needed markup
 function gal_init_startup(){
 	
-jQuery( ".gal" ).each(function(i) {
-var xitems = $('.gal > li').length;
-$(this).attr('data-items', xitems);
-jQuery(this).find('li').each(function(i) {
-var cid = 'gal-item-'+i;
-jQuery(this).attr('data-count',i);
-jQuery(this).attr('id',cid);
-});
+jQuery(".gal").each(function(i) {
+// Select only <li> elements within the current .gal
+var xitems = jQuery(this).find('> li').length;
 
+// Set data-items attribute on the current .gal element
+jQuery(this).attr('data-items', xitems);
+
+// Iterate over the <li> elements inside the current .gal
+jQuery(this).find('> li').each(function(j) {
+var cid = 'gal-item-' + j;
+jQuery(this).attr('data-count', j);
+jQuery(this).attr('id', cid);
+});
 });
 
 // single preopen photo
 if(gal_vars_single_mode===true){
-var xurl = gal_domain+''+gal_quality+'/'+gal_vars_single_photo;
-$('a[href="'+xurl+'"]').trigger('click');
+$('img[xsrc="'+gal_thumb_url_from_original(gal_vars_single_photo)+'"]').first().closest('a').trigger('click');
 }
 
 }
@@ -1742,7 +2353,8 @@ jQuery('.zoomIn>.description').hide();
 }
 
 
-function album_about(){
+function album_about(){ 
+album_toggle_sidebar();
 var xhtml = '<p><b>PHPix Gallery</b> is a free and open source software maintained by <a target="_blank" href="http://phploaded.com/project/phpix.html">PHPloaded.com</a> and developed by <a rel="nofollow" target="_blank" href="https://www.facebook.com/sakush100/">Satish Kumar Sharma</a>.<br /><br />Its purpose is to organise personal photo online, without giving away your photos to third party websites and social media platforms. This gives you instant access to your photos anytime, anywhere and any device with just a web browser. This helps to safeguard your photos and have complete control in your hands. <br /><br />This software can be run on self hosted PHP and MySQL server, even on shared linux hosting, very easily.<br /><br /><a target="_blank" href="http://phploaded.com/project/phpix.html">PHPix gallery</a> is released under <b><a rel="nofollow" target="_blank" href="https://raw.githubusercontent.com/phploaded/PHPix/master/LICENSE">MIT licence</a></b>.</p>';
 phpl_alert(xhtml, 'About PHPix Gallery');
 }
@@ -1750,13 +2362,20 @@ phpl_alert(xhtml, 'About PHPix Gallery');
 // used during slideshow
 function gal_preloader_error(){
 //gal_stop_slideshow();
-$('.gal-preloader > img').attr('src', gal_domain+'css/svg/error.svg');
+var ximg = $('.gal-preloader > img');
+if(ximg.length==1 && gal_try_image_fallback(ximg)){
+return;
+}
+ximg.attr('src', gal_domain+'css/svg/error.svg');
 //gal_toast('Next photo failed! Slideshow aborted!!');
 }
 
 // used during single image loading
 function gal_preload_failed(xthis){
-gal_toast('Loading failed!!');
+if(gal_try_image_fallback(xthis)){
+return;
+}
+gal_toast('Loading failed!!', 'red');
 var xurl = gal_domain+'css/svg/error.svg';
 $('.gal-hd-img').attr('src', xurl);
 jQuery('.gal-hd-img').removeClass('blurred');
@@ -1779,9 +2398,18 @@ var nid = 0;
 var nid = cid + 1;
 }
 
-var nextSRC = jQuery('#gal-item-'+nid+' > a').attr('href');
-
-jQuery('.gal-bg').append('<div class="gal-preloader"><img onerror="gal_preloader_error()" onload="gal_preloader_ready()" src="'+nextSRC+'"></div>');
+var xitem = jQuery('#gal-item-'+nid);
+jQuery('.gal-preloader').remove();
+gal_prepare_item_media(xitem, gal_quality).done(function(){
+if(jQuery('.fullscreen-item').length!=1 || parseInt(jQuery('.fullscreen-item').attr('data-count'))!==cid){
+return;
+}
+var displayData = gal_display_url_data_from_item(xitem, gal_quality);
+jQuery('.gal-bg').append('<div class="gal-preloader"><img onerror="gal_preloader_error(this)" onload="gal_preloader_ready()" src=""></div>');
+gal_set_image_source_with_fallback($('.gal-preloader > img'), displayData.preferred, displayData.fallback);
+}).fail(function(){
+gal_preloader_error();
+});
 }
 
 
@@ -1791,27 +2419,29 @@ jQuery('.gal-preloader').addClass('gal-preloader-ready');
 
 function gal_reel_replace(xsel){
 var xid = $(xsel+' img').attr('data-id');
-var ximg = $('#gal-item-'+xid+' img').attr('src');
-var xfull = ximg.replace('/thumb/', '/'+gal_quality+'/');
 $(xsel+' img').removeAttr('onload');
-$(xsel+' img').attr('src', xfull);
+var displayData = gal_display_url_data_from_item($('#gal-item-'+xid), gal_quality);
+$(xsel+' img').off('error.galAi').on('error.galAi', function(){
+gal_try_image_fallback(this);
+});
+gal_set_image_source_with_fallback($(xsel+' img'), displayData.preferred, displayData.fallback);
 }
 
 
 function gal_doubletap_zoom(){
-    if (gal_vars_tapTimer == null) {
-        gal_vars_tapTimer = setTimeout(function () {
-            gal_vars_tapTimer = null;
-        //    alert("single");
+if (gal_vars_tapTimer == null) {
+gal_vars_tapTimer = setTimeout(function () {
+gal_vars_tapTimer = null;
+//alert("single");
 
-        }, 500)
-    } else {
-        clearTimeout(gal_vars_tapTimer);
-        gal_vars_tapTimer = null;
-    //    alert("double");
+}, 500)
+} else {
+clearTimeout(gal_vars_tapTimer);
+gal_vars_tapTimer = null;
+//alert("double");
 	start_zoom();
 
-    }
+}
 }
 
 
@@ -1832,10 +2462,11 @@ panzoom.destroy();
 delete window.panzoom;
 }
 
-$('.album-ctr, .album-bar-ctr, .gal-ctr, #album-info, #album-sidebar').hide();
+$('.album-ctr, .album-bar-ctr, .gal-ctr, #album-info, #album-sidebar, #search-info').hide();
 
 var xthumb = $('.fullscreen-item > a > img').attr('xsrc');
-var xphoto = $('.fullscreen-item > a').attr('href');
+var displayData = gal_display_url_data_from_item($('.fullscreen-item'), gal_quality);
+var xphoto = displayData.preferred;
 var xtype = $('.fullscreen-item').attr('data-xtype');
 
 var cid = parseInt($('.fullscreen-item').attr('data-count'));
@@ -1847,9 +2478,6 @@ if(cid==0){prev_id = maxid-1;}
 var next_id = cid + 1;
 if(cid==(maxid-1)){next_id = 0;}
 
-
-var prev_pic = $('#gal-item-'+prev_id+' a').attr('href');
-var next_pic = $('#gal-item-'+next_id+' a').attr('href');
 var prev_thumb = $('#gal-item-'+prev_id+' img').attr('xsrc');
 var next_thumb = $('#gal-item-'+next_id+' img').attr('xsrc');
 
@@ -1860,15 +2488,12 @@ var basic_html = '<div id="gal-reel-ctr">\
 <div id="gal-reel-next"><div id="gal-reel-next-inner"><img style="'+gal_get_css(next_id)+'" data-id="'+next_id+'" src="'+next_thumb+'" /><div class="gal_loading"></div></div></div>\
 </div>\
 </div>\
-<div class="gal-reel-preloader">\
-<img onload="gal_preload_complete(this)" src="'+prev_pic+'" />\
-<img onload="gal_preload_complete(this)" src="'+next_pic+'" />\
-</div>';
+<div class="gal-reel-preloader"></div>';
 
 var aid = getQueryString('aid');
-var uri = xphoto.split('/'+gal_quality+'/');
-$('title').html('PHPix photo - '+uri[1]);
-window.history.pushState( {} , 'phpix', gal_domain+'phpix-alt.php?u='+uri[1] );
+var xfile = $('.fullscreen-item').attr('data-file');
+$('title').html('PHPix photo - '+xfile);
+window.history.pushState( {} , 'phpix', gal_domain+'phpix-alt.php?u='+xfile );
 
 if(jQuery('.fullscreen').length==1){
 
@@ -1877,7 +2502,8 @@ $('.gal-zoomed').remove();
 $('#gal-reel-out').html(basic_html);
 
 
-jQuery('.gal-preload').attr('src', xphoto);
+jQuery('.gal-preload').attr('src', '');
+gal_set_image_source_with_fallback(jQuery('.gal-preload'), xphoto, displayData.fallback);
 jQuery('.gal-stats, .gal-share').html('<div class="gal_loading"></div>');
 
 } else {
@@ -1902,6 +2528,7 @@ jQuery(selector).append('<div id="fullscreen" class="fullscreen">\
 <div ontouchmove="gal_touch_controls()" class="gal-bg">\
 <div class="zoomed-in-text"></div>\
 <div class="gal-counter"></div>\
+<button type="button" onclick="gal_toggle_ai_mode()" class="gal-ai-toggle" title="AI photos"><img src="'+gal_domain+'phpix-libs/images/ai.png" alt="AI photos"></button>\
 <div class="gal-share-ctr"><div class="gal-share"><div class="gal_loading"></div></div></div>\
 <div class="gal-stats-ctr"><div onclick="gal_picinfo()" class="gal-picinfo-close">X</div><h2>Photo Information</h2><div id="gal_stats" class="gal-stats"><div class="gal_loading"></div></div></div>\
 <ul class="gal-toolbar"><li class="gal-play"></li><li onclick="gal_rotate()" class="gal-rotate"></li><li onclick="gal_fitscreen()" class="gal-screenfit"></li><li class="gal-fullscreen"></li><li class="gal-close"></li></ul>\
@@ -1911,7 +2538,7 @@ jQuery(selector).append('<div id="fullscreen" class="fullscreen">\
 <div class="gal-next"></div>\
 <div data-items="'+total+'" onclick="gal_show_cart()" class="gal-cart-indicator"><b>'+total+'</b></div>\
 <div  onclick="gal_mobile_controls()" class="gal-mobile-controls"></div>\
-<img onerror="gal_preload_failed(this)" onload="gal_preloaded(this)" id="gal_preloaded" class="gal-preload" src="'+xphoto+'" /></div></div>');
+<img onerror="gal_preload_failed(this)" onload="gal_preloaded(this)" id="gal_preloaded" class="gal-preload" src="" /></div></div>');
 jQuery('body').addClass('no-scroll');
 
 // load value from cache
@@ -1937,9 +2564,15 @@ if(gal_init_fullscreen===true){
 
 }
 
+gal_update_ai_toggle_button();
+gal_refresh_ai_toggle_for_file(xfile);
+gal_set_image_source_with_fallback($('#gal_preloaded'), xphoto, displayData.fallback);
+
 gal_screen_rotated();
 gal_demo();
 
+gal_prepare_reel_item($('#gal-reel-prev-inner'), gal_quality);
+gal_prepare_reel_item($('#gal-reel-next-inner'), gal_quality);
 
 gal_xtag_reinit();
 
@@ -1957,9 +2590,9 @@ gal_set_thumb();
 
 
 function gal_getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+min = Math.ceil(min);
+max = Math.floor(max);
+return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function gal_random_animation(){
@@ -2011,7 +2644,7 @@ var xhtml = '<form name="gal-settings-form"><table class="phpl-alert-table"><tbo
 <tr><td>Swipe Animation</td><td>'+ahtml+'</td></tr>\
 <tr><td>Interface Theme</td><td><select id="gal-setting-theme" name="gal-setting-theme">'+thtml+'</select></td></tr>\
 <tr><td>Button Set</td><td><select id="gal-setting-buttons" name="gal-setting-buttons">'+bhtml+'</select></td></tr>\
-<tr><td>Photo Quality</td><td><select id="gal-setting-pixq" name="gal-setting-pixq"><option value="automatic">Automatic</option><option value="full">Original</option><option value="fhd">Full HD 1080p</option><option value="hd">HD 720p</option><option value="qhd">Quarter HD</option></select></td></tr>\
+<tr><td>Photo Quality</td><td><select id="gal-setting-pixq" name="gal-setting-pixq"><option value="automatic">Automatic</option><option value="full">Original</option><option value="2k">2K 1440p</option><option value="fhd">Full HD 1080p</option><option value="hd">HD 720p</option></select></td></tr>\
 <tr><td>Photo Tags</td><td><select id="gal-setting-tags" name="gal-setting-tags"><option value="show">show</option><option value="hide">hide</option></select></td></tr>\
 <tr><td>Background</td><td><select id="gal-setting-bgmode" name="gal-setting-bgmode"><option value="static">static</option><option value="animated">animated</option><option value="disabled">disabled</option></select></td></tr>\
 <tr><td>Thumbnails</td><td><select id="gal-setting-thumbs" name="gal-setting-thumbs"><option value="show">show</option><option value="hide">hide</option></select></td></tr>\
@@ -2171,24 +2804,21 @@ gal_apply_pixq(pixq);
 
 gal_mobile_controls('hide');
 phpl_close_alert();
-gal_toast('Changes applied!');
+gal_toast('Changes applied!', 'rosy');
 }
 
 
 function gal_apply_pixq(pixq){
-if(gal_pixq!=pixq){
-phpl_alert('Sending your to homepage in 5 seconds because photo quality is changed! You can navigate to same album again!', 'quality changed');
-setTimeout(function(){
-document.location.href = gal_domain+''+albumFILE;
-}, 5000);
-}
+var qualityChanged = gal_pixq!=pixq;
 gal_pixq = pixq;
 gal_set_quality();
 $('.gal .item').each(function() {
-var xurl = $(this).find('img').attr('xsrc');
-var nurl = xurl.replace('/thumb/', '/'+gal_quality+'/');
-$(this).find('a').attr('href', nurl);
+$(this).find('a').attr('href', gal_quality_url_from_item($(this), gal_quality));
 });
+
+if(qualityChanged && $('.fullscreen').length==1 && $('.fullscreen-item').length==1){
+gal_prepare_fullscreen_item($('.fullscreen-item'));
+}
 
 }
 
@@ -2386,6 +3016,27 @@ var ratio = Math.max(maxWidth / srcWidth, maxHeight / srcHeight);
 return { width: srcWidth*ratio, height: srcHeight*ratio };
 }
 
+function gal_should_fill_screen(srcWidth, srcHeight) {
+if($('.gal-zoomfit').length==0){
+return false;
+}
+
+var viewportLandscape = $(window).width() >= $(window).height();
+if(viewportLandscape){
+return srcWidth >= srcHeight;
+}
+
+return srcHeight >= srcWidth;
+}
+
+function gal_pick_screen_size(srcWidth, srcHeight, maxWidth, maxHeight) {
+if(gal_should_fill_screen(srcWidth, srcHeight)){
+return gal_screenFill(srcWidth, srcHeight, maxWidth, maxHeight);
+}
+
+return gal_screenFit(srcWidth, srcHeight, maxWidth, maxHeight);
+}
+
 function gal_get_css(xid){
 if($('.gal-stats-pinned').length==0){
 var windowWidth = $(window).width();
@@ -2393,13 +3044,9 @@ var windowWidth = $(window).width();
 var windowWidth = $(window).width()-300;
 }
 var windowHeight = $(window).height();
-var thumbHeight = parseInt($('#gal-item-'+xid).attr('data-h'));
-var thumbWidth = parseInt($('#gal-item-'+xid).attr('data-w'));
-if($('.gal-zoomfit').length==1){
-var xsize = gal_screenFill(thumbWidth, thumbHeight, windowWidth, windowHeight);
-} else {
-var xsize = gal_screenFit(thumbWidth, thumbHeight, windowWidth, windowHeight);
-}
+var thumbHeight = parseInt($('#gal-item-'+xid).attr('data-fh'));
+var thumbWidth = parseInt($('#gal-item-'+xid).attr('data-fw'));
+var xsize = gal_pick_screen_size(thumbWidth, thumbHeight, windowWidth, windowHeight);
 var xcss = 'height:'+parseInt(xsize.height)+'px;width:'+parseInt(xsize.width)+'px;';
 return xcss;
 }
@@ -2407,13 +3054,9 @@ return xcss;
 function gal_get_css_rotate(xid){
 var windowWidth = $(window).width();
 var windowHeight = $(window).height();
-var thumbHeight = parseInt($('#gal-item-'+xid).attr('data-w'));
-var thumbWidth = parseInt($('#gal-item-'+xid).attr('data-h'));
-if($('.gal-zoomfit').length==1){
-var xsize = gal_screenFill(thumbWidth, thumbHeight, windowWidth, windowHeight);
-} else {
-var xsize = gal_screenFit(thumbWidth, thumbHeight, windowWidth, windowHeight);
-}
+var thumbHeight = parseInt($('#gal-item-'+xid).attr('data-fw'));
+var thumbWidth = parseInt($('#gal-item-'+xid).attr('data-fh'));
+var xsize = gal_pick_screen_size(thumbWidth, thumbHeight, windowWidth, windowHeight);
 var xcss = 'height:'+parseInt(xsize.width)+'px;width:'+parseInt(xsize.height)+'px;';
 return xcss;
 }
@@ -2461,8 +3104,7 @@ gal_ajax_exif();
 // exif reading
 function gal_ajax_exif(){
 if(jQuery('.gal-stats-pinned').length==1 && jQuery('.gal-stats .gal_loading').length==1){
-var xurl = jQuery('.fullscreen-item > a > img').attr('xsrc');
-var xxurl = xurl.replace('/thumb/', '/'+gal_quality+'/');
+var xxurl = jQuery('.fullscreen-item').attr('data-file');
 $.get( gal_domain+"phpix-exif.php", {id:xxurl} ,function(data) {
 $('#gal_stats').html(data);
 });
@@ -2523,7 +3165,7 @@ setTimeout(gal_gen_thumbs, 20);
 });
 } else {
 $('.meter-out, #new_thumbs, .progress_filler').remove();
-new flexImages({selector: '.gal', rowHeight: 150});
+    new flexImages({selector: '.gal', rowHeight: 150});
 setTimeout(gal_init_startup(), 200);
 }
 }
@@ -2569,7 +3211,7 @@ var xhtml = '';
 for(var i=0;i<xjson.t;i++){
 var str = xjson.data[i].u;
 if (str.indexOf("yt[") >= 0){var xtype='yt';} else {var xtype='photo';}
-xhtml = xhtml+'<li data-access="'+xjson.data[i].a+'" data-h="'+xjson.h+'" data-xtype="'+xtype+'" data-w="'+xjson.data[i].w+'" class="item gal-type-'+xtype+'"><a href="'+gal_domain+''+gal_quality+'/'+xjson.data[i].u+'"><img class="lazyload" src="'+gal_domain+'css/point.png" xsrc="'+gal_domain+'thumb/'+xjson.data[i].u+'" /></a></li>';
+xhtml = xhtml+'<li data-access="'+xjson.data[i].a+'" data-file="'+xjson.data[i].u+'" data-fw="'+xjson.data[i].fw+'" data-fh="'+xjson.data[i].fh+'" data-h="'+xjson.h+'" data-xtype="'+xtype+'" data-w="'+xjson.data[i].w+'" class="item gal-type-'+xtype+'"><a href="'+gal_quality_url_from_original(xjson.data[i].u, gal_quality, xjson.data[i].fw, xjson.data[i].fh)+'"><img class="lazyload" src="'+gal_domain+'css/point.png" xsrc="'+gal_thumb_url_from_original(xjson.data[i].u)+'" /></a></li>';
 }
 $('<ul id="'+xid+'" class="gal flex-images">'+xhtml+'</ul>').insertAfter(mainCtr+' [data-id="'+xid+'"]');
 lazyload_prepare();
@@ -2610,9 +3252,11 @@ function gal_reset_navigation(){
 setTimeout(gal_reset_navigation_now, 10);
 }
 
-function gal_reset_navigation_now(){
+function gal_reset_navigation_now(){ 
+
 var cid = parseInt($('.fullscreen-item').attr('data-count'));
 var maxid = parseInt($('.fullscreen-item').closest('[data-items]').attr('data-items'));
+
 if(cid==0){
 $('.gal-prev').css('visibility','hidden');
 } else {
@@ -2621,7 +3265,23 @@ $('.gal-prev').css('visibility','visible');
 
 if(cid==(maxid-1)){
 $('.gal-next').css('visibility','hidden');
-gal_toast('Last photo reached');
+
+if(gal_vars_deepshow_running==true){
+
+// Toast message based on the visit count
+if (gal_vars_deepshow_visitedAlbumsCount === gal_vars_deepshow_totalAlbums) {
+	gal_toast('Last photo of DeepShow', 'brown');
+} else {
+	gal_toast('Loading next album...', 'blue');
+}
+
+setTimeout(gal_deepshow_load_next, gal_vars_deepshow_time*1000);
+} else {
+if(gal_vars_slideshow == true){
+gal_toast('Last photo of SlideShow reached', 'teal');
+}
+}
+
 } else {
 $('.gal-next').css('visibility','visible');
 }
@@ -2639,16 +3299,15 @@ $('.gal-counter').hide();
 
 
 function gal_sharer(){
-var xphoto = $('.fullscreen-item > a').attr('href');
-var p = xphoto.split('/'+gal_quality+'/');
+var file = $('.fullscreen-item').attr('data-file');
 
 var shtml = '<ul class="gal-share-menu">\
 <li onclick="gal_xtag_toggle()" class="gal-xtag-toggle"><b>Toggle Tags</b></li>\
 <li onclick="gal_settings()" class="gal-xtag-gear"><b>Settings</b></li>\
 <li onclick="gal_picinfo()" class="gal-share-picinfo"><b>View details</b></li>\
-<li onclick="gal_share_media(\''+p[1]+'\')" class="gal-share-social"><b>Share</b></li>\
-<li onclick="gal_download_options(\''+p[1]+'\')" class="gal-share-dl"><b>Download</b></li>\
-<li onclick="gal_add_to_cart(\''+p[1]+'\')" class="gal-share-cart"><b>Send to Cart</b></li>\
+<li onclick="gal_share_media(\''+file+'\')" class="gal-share-social"><b>Share</b></li>\
+<li onclick="gal_download_options(\''+file+'\')" class="gal-share-dl"><b>Download</b></li>\
+<li onclick="gal_add_to_cart(\''+file+'\')" class="gal-share-cart"><b>Send to Cart</b></li>\
 </ul>';
 
 $('.gal-share').html(shtml);
@@ -2662,10 +3321,10 @@ $('.gal-prev, .gal-next').toggleClass('gal-mobile-control');
 function gal_xtag_toggle(){
 if($('#xtag-element').hasClass('panzoom-exclude')){
 $('#xtag-element').removeClass('panzoom-exclude');
-gal_toast('Tagging diabled');
+gal_toast('Tagging diabled', 'red');
 } else {
 $('#xtag-element').addClass('panzoom-exclude');
-gal_toast('Tagging enabled');
+gal_toast('Tagging enabled', 'green');
 }
 gal_mobile_controls('hide');
 }
@@ -2761,7 +3420,7 @@ if(total!=0){
 var uhtml = '';
 
 for(i in xjson.pic){
-uhtml = uhtml + '<li style="background-image:url('+gal_domain+'thumb/'+xjson.pic[i]+')" xpic="'+xjson.pic[i]+'"><b onclick="gal_cart_remove(\''+xjson.pic[i]+'\')">X</b></li>';
+uhtml = uhtml + '<li style="background-image:url('+gal_thumb_url_from_original(xjson.pic[i])+')" xpic="'+xjson.pic[i]+'"><b onclick="gal_cart_remove(\''+xjson.pic[i]+'\')">X</b></li>';
 }
 
 } else {
@@ -2788,20 +3447,69 @@ xhtml = xhtml + '<tr>\
 phpl_alert(xhtml, 'Share on Social Media');
 }
 
+function gal_share_album(aid){
+aid = aid || gal_vars_aid;
 
-function printExternal(url) {
-    var printWindow = window.open( url, 'Print');
-    printWindow.addEventListener('load', function(){
-        printWindow.print();
-        printWindow.close();
-    }, true);
+if(typeof aid!='string' || aid==''){
+gal_toast('Album link unavailable', 'red');
+return;
+}
+
+var albumUrl = gal_domain+'phpix-alt.php?a='+aid;
+var encodedAlbumUrl = encodeURIComponent(albumUrl);
+var xhtml = '<table class="phpl-alert-table gal-link-button_table">';
+
+for(var i=0; i<gal_share_network_keys.length;++i){
+var shareHref = '';
+
+if(gal_share_network_keys[i]=='fb'){
+shareHref = 'https://www.facebook.com/sharer/sharer.php?u='+encodedAlbumUrl;
+}
+
+if(gal_share_network_keys[i]=='tw'){
+shareHref = 'https://twitter.com/home?status='+encodedAlbumUrl;
+}
+
+if(gal_share_network_keys[i]=='gp'){
+shareHref = 'https://plus.google.com/share?url='+encodedAlbumUrl;
+}
+
+if(gal_share_network_keys[i]=='pi'){
+shareHref = 'https://pinterest.com/pin/create/button/?url='+encodedAlbumUrl+'&media=&description=';
+}
+
+if(gal_share_network_keys[i]=='wh'){
+shareHref = 'https://api.whatsapp.com/send?text='+encodedAlbumUrl;
+}
+
+if(shareHref!=''){
+xhtml = xhtml + '<tr><td width="60"><b>'+gal_share_network_names[i]+'</b></td><td>\
+<a target="_blank" href="'+shareHref+'">SHARE NOW</a>\
+</td></tr>';
+}
+}
+
+xhtml = xhtml + '<tr>\
+<tr><td><b>Copy link</b></td><td><input type="text" value="'+albumUrl+'" /></td></tr>\
+</tr></table>';
+
+phpl_alert(xhtml, 'Share Album');
 }
 
 
-function gal_toast(xtext){
+function printExternal(url) {
+var printWindow = window.open( url, 'Print');
+printWindow.addEventListener('load', function(){
+printWindow.print();
+printWindow.close();
+}, true);
+}
+
+
+function gal_toast(xtext, classes = '', time = 3000){
 jQuery('.gal-toast').remove();
-jQuery('.fullscreen').append('<div class="gal-toast"><div class="gal-toast-text">'+xtext+'</div></div>');
-jQuery(".gal-toast").delay(2000).fadeOut("slow", function(){
+jQuery('#flscrn').append('<div class="gal-toast '+classes+'"><div class="gal-toast-text">'+xtext+'</div></div>');
+jQuery(".gal-toast").delay(time).fadeOut("slow", function(){
 jQuery('.gal-toast').remove();
 });
 }

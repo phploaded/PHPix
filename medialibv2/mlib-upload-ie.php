@@ -28,7 +28,7 @@ $caption = $title;
 $url = MLIBURL.$targetFile;
 
 if(in_array($ext, $mlib_allowed_images)){
-$thumb = get_image_thumb($newfilename, 'w=150&h=150');
+$thumb = get_image_thumb($newfilename, 'h='.phpix_thumb_height());
 mysqli_query($mlib_db, "INSERT INTO `".MLIBPREFIX."uploads` (`id`, `type`, `title`, `caption`, `url`, `thumb`, `time`, `uid`, `size`) 
 VALUES ('$id', '$ext', '$title', '$caption', '$url', '$thumb', '".time()."', '$userid', '$size')");
 } else {

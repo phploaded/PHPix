@@ -1,6 +1,7 @@
 <?php 
 
 $zhtml = '';
+sync_generated_dirs();
 
 if($_SESSION['phpixuser']!=''){
 echo'<style type="text/css">#delete-cache{display:none;}</style>';
@@ -29,7 +30,7 @@ echo'<p>No information is provided. Please refer to official website.</p>';
 
 } else {
 $filenm = $_SERVER['HTTP_HOST'].'-index-'.date("Ym").'.html';
-sadmin_title('<i class="fa fa-pie-chart"></i> Dashboard<a href="phpix-manage.php?page=operations&method=nocache&file='.$filenm.'" class="pull-right btn btn-warning"><i class="fa fa-refresh"></i> Refresh</a><div class="clearfix"></div>'); 
+sadmin_title('<i class="fa fa-pie-chart text-primary"></i> Dashboard<a href="phpix-manage.php?page=operations&method=nocache&file='.$filenm.'" class="pull-right btn btn-warning"><i class="fa fa-refresh"></i> Refresh</a><div class="clearfix"></div>'); 
 include('phpix-info.php');
 ?>
 <div class="clearfix"></div>
@@ -48,7 +49,7 @@ $data = mysqli_query($con, "SELECT * FROM `".$prefix."dirs` ORDER BY `sort` ASC"
 $tb = 0;
 while($row = mysqli_fetch_assoc($data)){
 
-if($row['id']=='full' || $row['id']=='cover'){
+if($row['id']=='ai' || $row['id']=='full' || $row['id']=='cover'){
 $xlinks = '';
 } elseif($row['id']=='temp'){
 $xlinks = '<a class="confirm btn btn-xs btn-danger" href="'.$admin_url.'operations&method=delete&dir='.$row['id'].'">Delete</a>

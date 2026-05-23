@@ -737,7 +737,7 @@ text-align:center;
 
 
 
-@media only screen and (max-width: 400px) {
+@media only screen and (max-width: 500px) {
 .mlib-thumbs{
 width:30%;
 height:105px;

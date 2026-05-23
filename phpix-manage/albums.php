@@ -1,6 +1,6 @@
 <?php 
 
-sadmin_title('<i class="fa fa-photo"></i> Albums<a href="'.$admin_url.'new-album" class="btn btn-success btn-medium pull-right">Create new</a>'); 
+sadmin_title('<i class="fa fa-photo text-warning"></i> Albums<a href="'.$admin_url.'new-album" class="btn btn-success btn-medium pull-right"><i class="fa fa-lg fa-fw fa-plus"></i> Create</a>'); 
 
 if(!isset($_GET['delete'])){$_GET['delete']='';} 
 
@@ -87,8 +87,9 @@ echo'<tr id="row-'.$row['id'].'">
 <a class="btn btn-sm btn-success" target="_blank" href="'.$domain.''.$albumFILE.'?aid='.$row['id'].'">Browse</a> 
 <a class="btn btn-sm btn-warning" onclick="album_manage(this, \''.$row['id'].'\')" href="javascript:void(0)">Manage</a> 
 <a class="btn btn-sm btn-info" href="'.$admin_url.'settings&aid='.$row['id'].'">Settings</a> 
+<a class="btn btn-sm btn-default" href="'.$admin_url.'ai-pics&aid='.$row['id'].'">AI Pics</a> 
 <a class="btn btn-sm btn-primary" href="'.$admin_url.'backup&aid='.$row['id'].'">Backup</a> 
-<a class="confirm btn btn-sm btn-danger" href="'.$admin_url.'albums&delete='.$row['id'].'">Delete</a>
+<a class="btn btn-sm btn-danger" onclick="album_delete(\''.$row['id'].'\')" href="javascript:void(0)">Delete</a>
 </div>
 </td>
 </tr>';

@@ -1,15 +1,18 @@
 <?php 
 admin_only();
-sadmin_title('<i class="fa fa-users"></i> Private Users<a href="'.$admin_url.'new-user" class="btn btn-success btn-medium pull-right">Create new</a><div class="clearfix"></div>'); 
+sadmin_title('<i class="fa fa-users text-info"></i> Private Users<a href="'.$admin_url.'new-user" class="btn btn-success btn-medium pull-right"><i class="fa fa-lg fa-fw fa-plus"></i> Create</a><div class="clearfix"></div>'); 
 
 if(isset($_POST['uname'])){
 if(count($_POST['uname'])>0){
+	
 
 foreach($_POST['uname'] as $key => $val){
 $uname = $_POST['uname'][$key];
 $pwd = $_POST['pwd'][$key];
 if($pwd!=''){
-mysqli_query($con, "UPDATE `".$prefix."users` SET `pwd`='$val', `time`='".time()."' WHERE `id`='$key'");
+$sql = "UPDATE `".$prefix."users` SET `pwd`='$pwd', `time`='".time()."' WHERE `id`='$key'";
+
+mysqli_query($con, $sql);
 }
 mysqli_query($con, "UPDATE `".$prefix."users` SET `time`='".time()."', `name`='".$uname."' WHERE `id`='$key'");
 }

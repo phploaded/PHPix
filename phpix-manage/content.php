@@ -3,7 +3,7 @@ admin_only();
 $type = $_GET['id'];
 ?>
 
-<div class="page-header" id="banner"></div>
+<div class="page-header" id="banner"><h2><i class="fa fa-edit text-danger"></i> Content Manager</h2></div>
 
 
 <?php  

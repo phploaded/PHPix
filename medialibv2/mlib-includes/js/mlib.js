@@ -17,7 +17,19 @@ mlib_load_gallery_data_advanced(xpage, ipp);
 
 
 function mlib_uploaded_preview(xthumb){
-$('.mlib-uploaded-preview').prepend('<div class="mlib-uploaded-thumb" style="background-image:url(\''+main_domain+'thumb/'+xthumb+'\')"></div>');
+$('.mlib-uploaded-preview').prepend('<div class="mlib-uploaded-thumb" style="background-image:url(\''+mlib_thumb_url(xthumb)+'\')"></div>');
+}
+
+function mlib_thumb_url(xthumb){
+if(!xthumb){
+return '';
+}
+
+if(xthumb.indexOf('data:')===0 || /^([a-z]+:)?\/\//i.test(xthumb)){
+return xthumb;
+}
+
+return main_domain+'thumb/'+xthumb;
 }
 
 
@@ -39,29 +51,52 @@ mlib_load_gallery_data_advanced(xpage, ipp);
 
 
 
-$('body').on('click', '.mlib-save-changes', function(e){
-e.preventDefault();
-$.post( mlib_domain+"mlib.php", $('form.mlib-single-edit').serialize(), function( data ) {
-var xjson = JSON.parse(data);
-if(xjson.mlibid == '' || xjson.mlibid === undefined){
-alert('Some error occured, details could not be updated!!'+data);
-} else {
-$('.mlib-single-edit [name="title"]').val(xjson.title);
-$('.mlib-single-edit [name="caption"]').val(xjson.caption);
-$('.mlib-single-edit [name="tags"]').val(xjson.tags);
-$('.mlib-single-edit [name="emails"]').val(xjson.emails);
+$('body').on('click', '.mlib-save-changes', function(e) {
+    e.preventDefault();
 
-// update in actual thumbnail
-$('.mlib-selected-thumb[mlib-id="'+xjson.mlibid+'"]').attr('mlib-title', xjson.title);
-$('.mlib-selected-thumb[mlib-id="'+xjson.mlibid+'"]').attr('mlib-caption', xjson.caption);
-$('.mlib-selected-thumb[mlib-id="'+xjson.mlibid+'"]').attr('mlib-tags', xjson.tags);
-$('.mlib-selected-thumb[mlib-id="'+xjson.mlibid+'"]').attr('mlib-emails', xjson.emails);
-$('.mlib-selected-thumb[mlib-id="'+xjson.mlibid+'"]').attr('mlib-access', xjson.access);
+    // AJAX POST request
+    $.post(mlib_domain + "mlib.php", $('form.mlib-single-edit').serialize())
+        .done(function(data) {
+            let xjson;
 
-alert('Updated successfully!');
-}
+            // Attempt to parse JSON response
+            try {
+                xjson = JSON.parse(data);
+            } catch (error) {
+                // Handle invalid JSON
+                phpl_alert('Invalid response received: ' + data, 'error-parse');
+                console.error('JSON Parse Error:', error, 'Response:', data);
+                return;
+            }
+
+            // Check for valid mlibid
+            if (!xjson.mlibid) {
+                phpl_alert('Some error occurred, details could not be updated!! ' + data, 'error-save');
+                return;
+            }
+
+            // Update fields and thumbnails
+            $('.mlib-single-edit [name="title"]').val(xjson.title);
+            $('.mlib-single-edit [name="caption"]').val(xjson.caption);
+            $('.mlib-single-edit [name="tags"]').val(xjson.tags);
+            $('.mlib-single-edit [name="emails"]').val(xjson.emails);
+
+            $('.mlib-selected-thumb[mlib-id="' + xjson.mlibid + '"]')
+                .attr('mlib-title', xjson.title)
+                .attr('mlib-caption', xjson.caption)
+                .attr('mlib-tags', xjson.tags)
+                .attr('mlib-emails', xjson.emails)
+                .attr('mlib-access', xjson.access);
+
+            admin_toast('Updated successfully!');
+        })
+        .fail(function(jqXHR, textStatus, errorThrown) {
+            // Handle AJAX request failure
+            phpl_alert('AJAX request failed: ' + textStatus + ' - ' + errorThrown, 'error-ajax');
+            console.error('AJAX Error:', textStatus, errorThrown);
+        });
 });
-});
+
 
 
 $('body').on('click', '.mlib-save-type', function(e){
@@ -147,12 +182,12 @@ var selectedx = $('.mlib-selected-thumb').length;
 var maxx = parseInt($('#mlib-lightbox').attr('mlib-max-selection'));
 var minx = parseInt($('#mlib-lightbox').attr('mlib-min-selection'));
 if(selectedx>maxx){
-alert('You can select maximum '+maxx+' files.');
+admin_toast('You can select maximum '+maxx+' files.');
 return false;
 }
 
 if(selectedx<minx){
-alert('You must select at least '+minx+' files.');
+admin_toast('You must select at least '+minx+' files.');
 return false;
 }
 
@@ -164,7 +199,7 @@ if(jQuery.inArray( xtype, allowed_types )==-1){allowed=0;}
 });
 
 if(allowed==0){
-alert('You are allowed to select '+allowed_types_string+' files only.');
+admin_toast('You are allowed to select '+allowed_types_string+' files only.');
 return false;
 }
 
@@ -213,9 +248,11 @@ $('.mlib-new-option-button').show();
 
 // selecting all thumbnails by pressing Ctrl+A
 $('body').on('click keyup', '.mlib-delete-all', function (){
-if(confirm('All selected files will be deleted. This cannot be undone. Are you sure to continue?')){
+
+phpl_confirm('All selected files will be permanently deleted. This cannot be undone. Are you sure to continue?', function(){
 mlib_delete_selected();
-}
+}, 'pic-delete-confirm');
+
 });
 
 
@@ -347,7 +384,7 @@ var thumb = $('[mlib-id="'+xid+'"]').attr('mlib-thumb');
 var xhtml = '\
 <p style="color:red;"><b>WARNING!</b> Rotating this image will also remove the camera and other related information from photo. It is always good to delete the incorrect photo and reupload the correctly rotated photo.</p><br />\
 <p>Once done, viewers need to clear cache to see the changes.</p><br /><h5>Choose degress:</h5>\
-<div class="rotate-canvas"><img id="rotate-preview-img" src="'+main_domain+'thumb/'+thumb+'"></div>\
+<div class="rotate-canvas"><img id="rotate-preview-img" src="'+mlib_thumb_url(thumb)+'"></div>\
 <div class="rotate-form"><br />\
 <input onchange="mlib_rotate_preview(this.value)" checked type="radio" name="deg" value="0"> 0 degrees<br />\
 <input onchange="mlib_rotate_preview(this.value)" type="radio" name="deg" value="90"> 90 degrees<br />\
@@ -373,7 +410,7 @@ $.post( mlib_domain+"mlib.php", {func:'mlib_photo_rotate', deg:xdeg, id:xid, u:u
 $('.phpl-alert-box').removeClass('phpl-alert-loading');
 var xt = new Date().getTime();
 phpl_close_alert();
-phpl_alert('Image rotation successful!');
+admin_toast('Image rotation successful!');
 
 mlib_load_gallery_data_auto();
 });
@@ -461,7 +498,7 @@ var xdata = jQuery.parseJSON(data);
 var xstr = '';
 for(var i=0;i<parseInt(xdata.total);++i){
 
-xstr = xstr+'<div mlib-access="'+xdata[i].access+'" mlib-size="'+xdata[i].size+'" mlib-id="'+xdata[i].id+'" mlib-type="'+xdata[i].type+'" mlib-time="'+xdata[i].newtime+'" mlib-title="'+xdata[i].title+'" mlib-caption="'+xdata[i].caption+'" mlib-url="'+xdata[i].url+'" mlib-thumb="'+xdata[i].thumb+'"  mlib-tags="'+xdata[i].tags+'" class="mlib-thumbs" style="background-image:url(\''+main_domain+'thumb/'+xdata[i].thumb+'\')">\
+xstr = xstr+'<div mlib-access="'+xdata[i].access+'" mlib-size="'+xdata[i].size+'" mlib-id="'+xdata[i].id+'" mlib-type="'+xdata[i].type+'" mlib-time="'+xdata[i].newtime+'" mlib-title="'+xdata[i].title+'" mlib-caption="'+xdata[i].caption+'" mlib-url="'+xdata[i].url+'" mlib-thumb="'+xdata[i].thumb+'"  mlib-tags="'+xdata[i].tags+'" class="mlib-thumbs" style="background-image:url(\''+mlib_thumb_url(xdata[i].thumb)+'\')">\
 <input type="checkbox" name="img['+xdata[i].id+']">\
 <div class="mlib-checkbox"></div></div>';
 
@@ -518,7 +555,7 @@ $('body').append(xhtml);
 
 $.post( mlib_domain+"mlib.php", $('form#mlibdelform').serialize(), function( data ) {
 
-alert(data);
+admin_toast(data);
 
 $(".mlib-selected-thumb").addClass('mlib-danger').fadeOut("slow", function(){
 $(this).remove();
@@ -560,6 +597,7 @@ $(this).remove();
 $('#mlibmovform').remove();
 mlib_load_gallery_data_auto();
 phpl_close_alert();
+admin_toast('Selected photos were moved');
 });
 
 });

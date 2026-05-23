@@ -1,5 +1,7 @@
 <?php 
 
+require_once('phpix-media-functions.php');
+
 function randomColor(){
     $result = array('rgb' => array(), 'hex' => '');
     foreach(array('r', 'b', 'g') as $col){
@@ -21,13 +23,16 @@ return $gallery_domain.''.$url.'?t='.filemtime($url);
 }
 
 
-function gal_display_albums($parent = ''){
+function gal_display_albums($parent = '', $key = ''){
+//	print_r($_GET);
 global $con, $prefix, $gallery_domain, $date_format, $albumFILE;
 
-if($parent==''){
-$esql = " `parent` = '' AND";
-} else {
-$esql = " `parent` = '$parent' AND";
+if($parent=='' && $key == ''){ // no search, display top folders
+$esql = " parent = '' AND";
+} elseif($parent!='' && $key == ''){ // no search, display folder content
+$esql = " parent = '$parent' AND";
+} else { // search in parent or subfolders
+$esql = "";
 }
 
 $classes = array(
@@ -46,33 +51,45 @@ $classes = array(
 "imghvr-blur"
 );
 
-echo'<div class="album-ctr">
-<div class="album-list ximghvr">';
 
 
-if(!isset($_SESSION['PHPix'])){$_SESSION['PHPix']='';} 
-if(!isset($_SESSION['phpixuser'])){$_SESSION['phpixuser']='';} 
 
-if($_SESSION['PHPix']!=''){
-$sql = "SELECT * FROM `".$prefix."albums` WHERE".$esql." (`access`='public' OR `access`='private') ORDER BY `title` ASC";
-} elseif($_SESSION['phpixuser']==''){
-$sql = "SELECT * FROM `".$prefix."albums` WHERE".$esql." `access`='public' ORDER BY `title` ASC";
-} else {
+    if (!isset($_SESSION['PHPix'])) $_SESSION['PHPix'] = '';
+    if (!isset($_SESSION['phpixuser'])) $_SESSION['phpixuser'] = '';
 
-$tql = mysqli_query($con, "SELECT * FROM `".$prefix."access` WHERE `uid`='".$_SESSION['phpixuser']."'");
-$nsql = '';
-while($row = mysqli_fetch_assoc($tql)){
-$nsql = $nsql." OR `id`='".$row['aid']."'";
-}
+    if ($_SESSION['PHPix'] !== '') {
+        $sql = "SELECT * FROM `".$prefix."albums` WHERE".$esql." (`access`='public' OR `access`='private')";
+    } elseif ($_SESSION['phpixuser'] === '') {
+        $sql = "SELECT * FROM `".$prefix."albums` WHERE".$esql." `access`='public'";
+    } else {
+        $tql = mysqli_query($con, "SELECT * FROM `".$prefix."access` WHERE `uid`='".$_SESSION['phpixuser']."'");
+        $nsql = '';
+        while ($row = mysqli_fetch_assoc($tql)) {
+            $nsql .= " OR `id`='".$row['aid']."'";
+        }
+        $sql = "SELECT * FROM `".$prefix."albums` WHERE".$esql." (`access`='public'".$nsql.")";
+    }
 
+    // Add search condition if key is not empty
+    if ($key !== '') {
+        $sql .= " AND (`title` LIKE '%$key%' OR `descr` LIKE '%$key%')";
+    }
+    $sql .= " ORDER BY `title` ASC";
 
-$sql = "SELECT * FROM `".$prefix."albums` WHERE".$esql." (`access`='public'".$nsql.") ORDER BY `title` ASC";
-}
-
-
+    echo '<div class="album-ctr"><div class="album-list ximghvr">';
+	
 // echo $sql; 
 
 $data = mysqli_query($con, $sql);
+$totdata = mysqli_num_rows($data);
+    if ($totdata === 0) {
+        if($parent=='' && $key==''){
+        echo '<div class="album-empty-state"><h2>No albums to display</h2><div class="album-descr">There are no albums available right now.</div></div></div></div><script>album_search_text(0);</script>';
+        } else {
+        echo '</div></div><script>album_search_text(0);</script>';
+        }
+        return;
+    }
 
 while($row = mysqli_fetch_assoc($data))
 { 
@@ -126,7 +143,11 @@ echo '<div class="album-box"><div class="album-ctr album-type-'.$row['access'].'
 
 }
 
-echo'</div></div><script>album_loadslow();</script>';
+echo'</div></div>
+<script>
+album_search_text('.$totdata.');
+album_loadslow();
+</script>';
 
 }
 
@@ -156,43 +177,14 @@ return $str;
 } 
 
 function get_thumb($path, $quality='full'){
-global $xthumb_secret;
-global $gallery_domain;
-global $default_gallery_settings;
-$file_info = pathinfo($path);
-$thumb_file_name = $file_info['basename'];
-if(!file_exists($default_gallery_settings['thumb_dir'].'/'.$thumb_file_name)){
-$thumb_file_data = file_get_contents($gallery_domain.'xthumb-'.$xthumb_secret.'.php?src='.urlencode($gallery_domain.'full/'.$path).'&h='.$default_gallery_settings['thumb_height'].'&q=90&s=1');
-$fp = fopen($default_gallery_settings['thumb_dir'].'/'.$thumb_file_name, "w");
-fwrite($fp, $thumb_file_data);
-fclose($fp);
-}
+	$thumb_file_name = phpix_thumb_filename($path);
+	phpix_prepare_thumb_file($path, 90);
 
-$quality_index = array(
-"qhd" => "480",
-"hd" => "720",
-"fhd" => "1080"
-);
+	if($quality!='full'){
+	phpix_prepare_media_file($quality, $path, 80);
+	}
 
-if(!file_exists($quality.'/'.$thumb_file_name) && $quality!='full'){
-
-$file = getimagesize('full/'.$thumb_file_name);
-$width = $file[0];
-$height = $file[1];
-
-if($width>$height){
-$thumb_file_data = file_get_contents($gallery_domain.'xthumb-'.$xthumb_secret.'.php?src='.urlencode($gallery_domain.'full/'.$path).'&h='.$quality_index[$quality].'&q=80');
-} else {
-$thumb_file_data = file_get_contents($gallery_domain.'xthumb-'.$xthumb_secret.'.php?src='.urlencode($gallery_domain.'full/'.$path).'&w='.$quality_index[$quality].'&q=80');
-}
-
-//echo $gallery_domain.'xthumb.php?src='.$path;
-$fp = fopen($quality.'/'.$thumb_file_name, "w");
-fwrite($fp, $thumb_file_data);
-fclose($fp);
-}
-
-return $thumb_file_name;
+	return $thumb_file_name;
 }
 
 

@@ -139,20 +139,43 @@ if($_GET['method']=='save'){
 	if ($_SESSION['PHPix'] != '' && $_POST['pic'] != '') {
 		$spot_id = uniqid();
 		$new_data[$spot_id] = $_POST;
-		
+		$spotLabel = trim((string) ($_POST['txt'] ?? ''));
+		$spotTagId = 0;
 
-			// Check if the title already exists
-			$checkSql = "SELECT COUNT(*) as count FROM `".$prefix."spots` WHERE `title` = '".mysqli_real_escape_string($con, $_POST['sel'])."'";
-			$result = mysqli_query($con, $checkSql);
-			$row = mysqli_fetch_assoc($result);
+			$select = $con->prepare("SELECT `id` FROM `".$prefix."spots` WHERE `title` = ? LIMIT 1");
+			if ($select) {
+				$select->bind_param('s', $spotLabel);
+				$select->execute();
+				$result = $select->get_result();
+				$row = $result ? $result->fetch_assoc() : null;
+				if ($result) {
+					$result->free();
+				}
+				$select->close();
+			}
 
-			if ($row['count'] == 0) { 
-				// Add new spot to collections
-				$sql = "INSERT INTO `".$prefix."spots` (`id`, `title`, `sort`, `uid`) VALUES (NULL, '".htmlentities($_POST['txt'], ENT_QUOTES, 'UTF-8')."', '0', '".$phpix_user."')";
-				mysqli_query($con, $sql);
+			if (!empty($row['id'])) {
+				$spotTagId = (int) $row['id'];
+				$update = $con->prepare("UPDATE `".$prefix."spots` SET `sort` = `sort` + 1 WHERE `id` = ? LIMIT 1");
+				if ($update) {
+					$update->bind_param('i', $spotTagId);
+					$update->execute();
+					$update->close();
+				}
+			} else {
+				$insert = $con->prepare("INSERT INTO `".$prefix."spots` (`uid`, `sort`, `title`) VALUES (?, 0, ?)");
+				if ($insert) {
+					$insert->bind_param('ss', $phpix_user, $spotLabel);
+					$insert->execute();
+					$spotTagId = (int) $insert->insert_id;
+					$insert->close();
+				}
 			}
 		
-
+		$new_data[$spot_id]['txt'] = $spotLabel;
+		if ($spotTagId > 0) {
+			$new_data[$spot_id]['tid'] = $spotTagId;
+		}
 		unset($new_data[$spot_id]['sel']);
 		$data = json_encode($new_data);
 		$sql = "UPDATE `".$prefix."uploads` SET `spots`=concat(spots,'$data,') WHERE `id`='".$_POST['pic']."'";
@@ -250,6 +273,8 @@ echo'<div class="album-bar-ctr">
 <a href="javascript:void(0)" onclick="album_toggle_sidebar()" class="albtn-menu"></a>
 <span>'.$album['title'].'</span>
 <ul class="album-buttons">
+<li class="albtn-deepshow gal-play"></li>
+<li onclick="gal_share_album(\''.$album['id'].'\')" class="gal-share-social"></li>
 <li onclick="toggleFullscreen(\'#flscrn\')" class="albtn-fullscreen"></li>
 <li onclick="album_info_toggle()" class="albtn-albinfo"></li>
 <li onclick="album_closePhotos()" class="albtn-back"></li>
@@ -291,15 +316,23 @@ $data = mysqli_query($con, $sql);
 
 while($row = mysqli_fetch_assoc($data))
 {    
-$thumb = 'thumb/'.$row['thumb'];
+$thumb_file = get_thumb($row['url'], $quality);
+$thumb = 'thumb/'.$thumb_file;
+$quality_file = phpix_media_disk_path($quality, $row['url']);
 
 /* checking both thumb and image ensures both are generated if not present via ajax */
-if(file_exists($quality.'/'.$row['thumb']) && file_exists('thumb/'.$row['thumb'])){
+if(file_exists($quality_file) && file_exists($thumb)){
 list($thumb_width, $thumb_height) = getimagesize($thumb);
-$oldthumb = $oldthumb.'<li class="item" data-w="'.$thumb_width.'" data-h="'.$thumb_height.'"><a href="'.$gallery_domain.''.$quality.'/'.$row['url'].'"><img src="'.$gallery_domain.''.$thumb.'"></a></li>';
+
+list($full_width, $full_height) = getimagesize('full/'.$row['url']);
+
+
+$oldthumb = $oldthumb.'<li class="item" data-file="'.$row['url'].'" data-fw="'.$full_width.'" data-fh="'.$full_height.'" data-w="'.$thumb_width.'" data-h="'.$thumb_height.'"><a href="'.phpix_media_url($quality, $row['url']).'"><img xsrc="'.$gallery_domain.''.$thumb.'" src="'.$gallery_domain.''.$thumb.'"></a></li>';
 $json['data'][$i]['w'] = $thumb_width;
-$json['data'][$i]['u'] = $row['thumb'];
+$json['data'][$i]['u'] = $row['url'];
 $json['data'][$i]['a'] = $row['access'];
+$json['data'][$i]['fw'] = $full_width;
+$json['data'][$i]['fh'] = $full_height;
 ++$i;
 } else {
 $newthumb = $newthumb.'<li data-access="'.$row['access'].'" data-url="'.$row['url'].'">'.$row['url'].'</li>';
@@ -408,36 +441,58 @@ $i = 0;
 echo'<div class="gal-ctr">
 <div class="notify"></div>';
 
-if($_SESSION['PHPix']!=''){
-$sql = "SELECT * FROM `".$prefix."uploads` WHERE (`access`='public' OR `access`='private') AND `spots` LIKE '%".$_GET['key']."%'";
-} elseif($_SESSION['phpixuser']==''){
-$sql = "SELECT * FROM `".$prefix."uploads` WHERE `access`='public' AND `spots` LIKE '%".$_GET['key']."%'";
+if ($_SESSION['PHPix'] != '') {
+    // Query for logged-in PHPix session
+    $sql = "SELECT * FROM `{$prefix}uploads` WHERE (`access`='public' OR `access`='private') AND `spots` LIKE ?";
+    $stmt = $con->prepare($sql);
+    $likeKey = '%' . $_GET['key'] . '%';
+    $stmt->bind_param('s', $likeKey);
+} elseif ($_SESSION['phpixuser'] == '') {
+    // Query for guest users
+    $sql = "SELECT * FROM `{$prefix}uploads` WHERE `access`='public' AND `spots` LIKE ?";
+    $stmt = $con->prepare($sql);
+    $likeKey = '%' . $_GET['key'] . '%';
+    $stmt->bind_param('s', $likeKey);
 } else {
-$tql = mysqli_query($con, "SELECT * FROM `".$prefix."access` WHERE `type`='photo' AND `uid`='".$_SESSION['phpixuser']."'");
-$nsql = '';
-while($row = mysqli_fetch_assoc($tql)){
-$nsql = $nsql." OR `id`='".$row['aid']."'";
+    // Query for specific user access
+    $tql = $con->prepare("SELECT `aid` FROM `{$prefix}access` WHERE `type`='photo' AND `uid`=?");
+    $tql->bind_param('s', $_SESSION['phpixuser']);
+    $tql->execute();
+    $result = $tql->get_result();
+
+    $nsqlParts = [];
+    while ($row = $result->fetch_assoc()) {
+        $nsqlParts[] = "`id` = " . intval($row['aid']); // Safely cast `aid` to integer
+    }
+    $nsql = implode(' OR ', $nsqlParts);
+
+    // Construct final query
+    $sql = "SELECT * FROM `{$prefix}uploads` WHERE (`access`='public' OR ($nsql)) AND `spots` LIKE ?";
+    $stmt = $con->prepare($sql);
+    $likeKey = '%' . $_GET['key'] . '%';
+    $stmt->bind_param('s', $likeKey);
 }
 
+// Execute the prepared statement
+$stmt->execute();
+$data = $stmt->get_result();
 
-$sql = "SELECT * FROM `".$prefix."uploads` WHERE".$esql." (`access`='public'".$nsql.") AND `spots` LIKE '%".$_GET['key']."%'";
-}
-
-
-
-$data = mysqli_query($con, $sql);
-
-while($row = mysqli_fetch_assoc($data))
+while($row = $data->fetch_assoc())
 {    
-$thumb = 'thumb/'.$row['thumb'];
+$thumb_file = get_thumb($row['url'], $quality);
+$thumb = 'thumb/'.$thumb_file;
+$quality_file = phpix_media_disk_path($quality, $row['url']);
 
 /* checking both thumb and image ensures both are generated if not present via ajax */
-if(file_exists($quality.'/'.$row['thumb']) && file_exists('thumb/'.$row['thumb'])){
+if(file_exists($quality_file) && file_exists($thumb)){
 list($thumb_width, $thumb_height) = getimagesize($thumb);
-$oldthumb = $oldthumb.'<li class="item" data-w="'.$thumb_width.'" data-h="'.$thumb_height.'"><a href="'.$gallery_domain.''.$quality.'/'.$row['url'].'"><img src="'.$gallery_domain.''.$thumb.'"></a></li>';
+list($full_width, $full_height) = getimagesize('full/'.$row['url']);
+$oldthumb = $oldthumb.'<li class="item" data-file="'.$row['url'].'" data-fw="'.$full_width.'" data-fh="'.$full_height.'" data-w="'.$thumb_width.'" data-h="'.$thumb_height.'"><a href="'.phpix_media_url($quality, $row['url']).'"><img xsrc="'.$gallery_domain.''.$thumb.'" src="'.$gallery_domain.''.$thumb.'"></a></li>';
 $json['data'][$i]['w'] = $thumb_width;
-$json['data'][$i]['u'] = $row['thumb'];
+$json['data'][$i]['u'] = $row['url'];
 $json['data'][$i]['a'] = $row['access'];
+$json['data'][$i]['fw'] = $full_width;
+$json['data'][$i]['fh'] = $full_height;
 ++$i;
 } else {
 $newthumb = $newthumb.'<li data-access="'.$row['access'].'" data-url="'.$row['url'].'">'.$row['url'].'</li>';
@@ -455,59 +510,74 @@ echo'<div data-id="gallery" class="gal_data">'.json_encode($json).'</div>
 
 
 
-if($_GET['method']=='album_get_photos'){
+if($_GET['method']=='album_get_photos'){ 
 
-$quality = $_GET['q'];
+$key = isset($_GET['key']) ? trim($_GET['key']) : '';
+$key = '%' . $key . '%'; // Add wildcards for LIKE condition
+
+$quality = isset($_GET['q']) ? htmlspecialchars(trim($_GET['q']), ENT_QUOTES, 'UTF-8') : 'hd';
 $oldthumb = '';
 $newthumb = '';
 $json = array();
 $i = 0;
 
-echo'<div class="gal-ctr">
+echo '<div class="gal-ctr">
 <div class="notify"></div>';
 
-if($_SESSION['PHPix']!=''){
-$sql = "SELECT * FROM `".$prefix."uploads` WHERE (`access`='public' OR `access`='private') AND (`title` LIKE '%".$_GET['key']."%' OR `caption` LIKE '%".$_GET['key']."%' OR `url` LIKE '%".$_GET['key']."%')";
-} elseif($_SESSION['phpixuser']==''){
-$sql = "SELECT * FROM `".$prefix."uploads` WHERE `access`='public' AND (`title` LIKE '%".$_GET['key']."%' OR `caption` LIKE '%".$_GET['key']."%' OR `url` LIKE '%".$_GET['key']."%')";
+if ($_SESSION['PHPix'] != '') {
+    $stmt = $con->prepare("SELECT * FROM `{$prefix}uploads` WHERE (`access`='public' OR `access`='private') AND (`title` LIKE ? OR `caption` LIKE ? OR `url` LIKE ?)");
+    $stmt->bind_param('sss', $key, $key, $key);
+} elseif ($_SESSION['phpixuser'] == '') {
+    $stmt = $con->prepare("SELECT * FROM `{$prefix}uploads` WHERE `access`='public' AND (`title` LIKE ? OR `caption` LIKE ? OR `url` LIKE ?)");
+    $stmt->bind_param('sss', $key, $key, $key);
 } else {
-$tql = mysqli_query($con, "SELECT * FROM `".$prefix."access` WHERE `type`='photo' AND `uid`='".$_SESSION['phpixuser']."'");
-$nsql = '';
-while($row = mysqli_fetch_assoc($tql)){
-$nsql = $nsql." OR `id`='".$row['aid']."'";
+    $uid = $_SESSION['phpixuser'];
+    $stmt = $con->prepare("SELECT * FROM `{$prefix}uploads` WHERE `access`='public' AND `uid`=? AND (`title` LIKE ? OR `caption` LIKE ? OR `url` LIKE ?)");
+    $stmt->bind_param('ssss', $uid, $key, $key, $key);
 }
 
+// Execute the statement and fetch results
+if ($stmt->execute()) {
+    $data = $stmt->get_result();
 
-$sql = "SELECT * FROM `".$prefix."uploads` WHERE".$esql." (`access`='public'".$nsql.") AND (`title` LIKE '%".$_GET['key']."%' OR `caption` LIKE '%".$_GET['key']."%' OR `url` LIKE '%".$_GET['key']."%')";
-}
+    while ($row = $data->fetch_assoc()) {
+        $thumb_file = get_thumb($row['url'], $quality);
+        $thumb = 'thumb/' . htmlspecialchars($thumb_file, ENT_QUOTES, 'UTF-8');
+        $quality_file = phpix_media_disk_path($quality, $row['url']);
 
+        /* Check both thumb and image ensure both are generated if not present via ajax */
+        if (file_exists($quality_file) && file_exists('thumb/' . $thumb_file)) {
+            list($thumb_width, $thumb_height) = getimagesize($thumb);
+            list($full_width, $full_height) = getimagesize('full/' . $row['url']);
 
+            $oldthumb .= '<li class="item" data-file="' . htmlspecialchars($row['url'], ENT_QUOTES, 'UTF-8') . '" data-fw="' . htmlspecialchars($full_width, ENT_QUOTES, 'UTF-8') . '" data-fh="' . htmlspecialchars($full_height, ENT_QUOTES, 'UTF-8') . '" data-w="' . htmlspecialchars($thumb_width, ENT_QUOTES, 'UTF-8') . '" data-h="' . htmlspecialchars($thumb_height, ENT_QUOTES, 'UTF-8') . '">
+                <a href="' . htmlspecialchars(phpix_media_url($quality, $row['url']), ENT_QUOTES, 'UTF-8') . '">
+                    <img xsrc="' . htmlspecialchars($gallery_domain . $thumb, ENT_QUOTES, 'UTF-8') . '" src="' . htmlspecialchars($gallery_domain . $thumb, ENT_QUOTES, 'UTF-8') . '">
+                </a>
+            </li>';
 
-$data = mysqli_query($con, $sql);
-
-while($row = mysqli_fetch_assoc($data))
-{    
-$thumb = 'thumb/'.$row['thumb'];
-
-/* checking both thumb and image ensures both are generated if not present via ajax */
-if(file_exists($quality.'/'.$row['thumb']) && file_exists('thumb/'.$row['thumb'])){
-list($thumb_width, $thumb_height) = getimagesize($thumb);
-$oldthumb = $oldthumb.'<li class="item" data-w="'.$thumb_width.'" data-h="'.$thumb_height.'"><a href="'.$gallery_domain.''.$quality.'/'.$row['url'].'"><img src="'.$gallery_domain.''.$thumb.'"></a></li>';
-$json['data'][$i]['w'] = $thumb_width;
-$json['data'][$i]['u'] = $row['thumb'];
-$json['data'][$i]['a'] = $row['access'];
-++$i;
+            $json['data'][$i]['w'] = $thumb_width;
+            $json['data'][$i]['u'] = htmlspecialchars($row['url'], ENT_QUOTES, 'UTF-8');
+            $json['data'][$i]['a'] = htmlspecialchars($row['access'], ENT_QUOTES, 'UTF-8');
+            $json['data'][$i]['fw'] = $full_width;
+            $json['data'][$i]['fh'] = $full_height;
+            ++$i;
+        } else {
+            $newthumb .= '<li data-access="' . htmlspecialchars($row['access'], ENT_QUOTES, 'UTF-8') . '" data-url="' . htmlspecialchars($row['url'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($row['url'], ENT_QUOTES, 'UTF-8') . '</li>';
+        }
+    }
 } else {
-$newthumb = $newthumb.'<li data-access="'.$row['access'].'" data-url="'.$row['url'].'">'.$row['url'].'</li>';
+    echo "<script>phpl_alert('Error executing query.')</script>";
 }
-}
-$json['t']=$i;
-$json['h']=$default_gallery_settings['thumb_height'];
 
-echo'<div data-id="gallery" class="gal_data">'.json_encode($json).'</div>
+// Add metadata to the JSON response
+$json['t'] = $i;
+$json['h'] = htmlspecialchars($default_gallery_settings['thumb_height'], ENT_QUOTES, 'UTF-8');
 
-<ul id="new_thumbs">'.$newthumb.'</ul>
-</div><script>album_search_text(\''.$i.'\');</script>';
+echo '<div data-id="gallery" class="gal_data">' . json_encode($json, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</div>
+
+<ul id="new_thumbs">' . $newthumb . '</ul>
+</div><script>album_search_text(\'' . htmlspecialchars($i, ENT_QUOTES, 'UTF-8') . '\');</script>';
 
 }
 
@@ -516,7 +586,8 @@ if($_GET['method']=='album_get_folders'){
 
 echo'';
 
-gal_display_albums('', $_GET['key']);
+$key = isset($_GET['key']) ? trim(mysqli_real_escape_string($con, $_GET['key'])) : '';
+gal_display_albums('', $key);
 
 echo'<div class="gal-ctr">
 <div class="notify"></div>

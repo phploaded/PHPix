@@ -112,7 +112,7 @@ $albumFILE = "phpix-album.php";
 
 $default_gallery_settings = array(
 	"thumb_width" => "200"	,
-	"thumb_height" => "150"	,
+	"thumb_height" => "300"	,
 	"thumb_dir" => "thumb"	,
 	"image_dir" => "full"	,
 	"temp_dir" => "temp"	,
@@ -142,9 +142,9 @@ mysqli_close($con);
 
 run_query("CREATE TABLE `".$_POST['dbprefix']."access` (
   `id` int(11) NOT NULL,
-  `uid` varchar(50) NOT NULL,
+  `uid` varchar(500) NOT NULL,
   `type` varchar(20) NOT NULL DEFAULT 'album',
-  `aid` varchar(50) NOT NULL
+  `aid` varchar(500) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
 
 run_query("CREATE TABLE `".$_POST['dbprefix']."albums` (
@@ -177,23 +177,25 @@ run_query("CREATE TABLE `".$_POST['dbprefix']."dirs` (
   `sort` int(11) NOT NULL,
   `time` int(11) NOT NULL,
   `files` int(11) NOT NULL,
-  `size` int(11) NOT NULL
+  `size` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
 
 run_query("INSERT INTO `".$_POST['dbprefix']."dirs` (`id`, `sort`, `time`, `files`, `size`) VALUES
-('cover', 0, 1603875150, 0, 0),
-('fhd', 2, 1603875156, 0, 0),
-('full', 1, 1603875152, 0, 0),
-('hd', 3, 1603875157, 0, 0),
-('qhd', 4, 1603875157, 0, 0),
-('thumb', 5, 1603875159, 0, 0);");
+('ai', 0, ".time().", 1, '0'),
+('cover', 1, ".time().", 1, '0'),
+('full', 2, ".time().", 1, '0'),
+('2k', 3, ".time().", 1, '0'),
+('fhd', 4, ".time().", 1, '0'),
+('hd', 5, ".time().", 1, '0'),
+('thumb', 6, ".time().", 1, '0'),
+('temp', 7, ".time().", 1, '0');");
 
 run_query("CREATE TABLE `".$_POST['dbprefix']."import` (
   `id` int(11) NOT NULL,
   `title` varchar(5000) NOT NULL,
   `content` varchar(5000) NOT NULL,
   `time` int(11) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;");
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
 
 run_query("INSERT INTO `".$_POST['dbprefix']."import` (`id`, `title`, `content`, `time`) VALUES
 (2, 'Full URL for multiple lines', '%%url%% [%%fullsize%%]&lt;br /&gt;', 1420712613),
@@ -206,6 +208,13 @@ run_query( "CREATE TABLE `".$_POST['dbprefix']."packages` (
   `id` int(11) NOT NULL,
   `dir` varchar(500) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
+
+run_query("INSERT INTO `".$_POST['dbprefix']."packages` (`id`, `dir`) VALUES
+(1, 'phpix-imports/packages/theme-air'),
+(2, 'phpix-imports/packages/theme-earth'),
+(3, 'phpix-imports/packages/theme-fire'),
+(4, 'phpix-imports/packages/theme-space'),
+(5, 'phpix-imports/packages/theme-water');");
 
 run_query( "CREATE TABLE `".$_POST['dbprefix']."uploads` (
   `id` varchar(500) NOT NULL,
@@ -222,13 +231,13 @@ run_query( "CREATE TABLE `".$_POST['dbprefix']."uploads` (
   `time` int(11) NOT NULL,
   `uid` varchar(1000) NOT NULL,
   `size` int(20) NOT NULL DEFAULT '0'
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;");
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
 
 run_query( "CREATE TABLE `".$_POST['dbprefix']."users` (
   `id` int(11) NOT NULL,
   `name` varchar(50) NOT NULL DEFAULT 'no_name',
-  `email` varchar(50) NOT NULL,
-  `pwd` varchar(50) NOT NULL,
+  `email` varchar(500) NOT NULL,
+  `pwd` varchar(500) NOT NULL,
   `time` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
 
@@ -262,16 +271,16 @@ run_query( "ALTER TABLE `".$_POST['dbprefix']."access`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;");
 
 run_query( "ALTER TABLE `".$_POST['dbprefix']."content`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=78;");
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;");
 
 run_query( "ALTER TABLE `".$_POST['dbprefix']."import`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;");
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;");
 
 run_query( "ALTER TABLE `".$_POST['dbprefix']."packages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;");
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;");
 
 run_query( "ALTER TABLE `".$_POST['dbprefix']."users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;");
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;");
 
 run_query( "CREATE TABLE `".$_POST['dbprefix']."spots` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -292,6 +301,9 @@ if ($zip->open($zipFile) === TRUE) {
 @xcopy('PHPix-master/' , './' );
 
 @rrmdir('PHPix-master/');
+@rrmdir('q'.'hd');
+@mkdir('2k');
+@file_put_contents('2k/index.html', '');
 
 
 // create phpix config file

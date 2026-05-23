@@ -1,6 +1,6 @@
 <form name="fdfdfd" action="" method="post">
 <div class="page-header" id="banner">
-<h2><i class="fa fa-gear"></i> Display Options <button class="pull-right btn btn-warning btn-medium">Save changes</button></h2>
+<h2><i class="fa fa-gear text-danger"></i> Display Options <button class="pull-right btn btn-warning btn-medium"><i class="fa fa-lg fa-fw fa-save"></i> Save</button></h2>
 </div>
 
 <div class="form-horizontal">

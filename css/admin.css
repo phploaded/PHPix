@@ -1,3 +1,36 @@
+@keyframes blink-toast {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.gal-toast{
+display: flex;
+justify-content: center;
+align-items: end;
+position:fixed;
+bottom:100px;
+height:100px;
+left:200px;
+right:200px;
+z-index:99999;
+animation: blink-toast 0.5s linear 3; /* 1 second per blink, repeats 3 times */
+}
+
+.gal-toast-text{
+background-color: rgba(0, 0, 0, 0.6);
+border-radius: 50px;
+display: inline-block;
+color: #fff;
+padding: 10px 20px;
+font: 12px verdana,sans-serif;
+text-shadow: 0 0 2px #000;
+box-shadow:0 0 2px #fff;
+}
+
 #system-updater{
 position:fixed;
 bottom:0;

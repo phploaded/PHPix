@@ -1,3 +1,80 @@
+@keyframes blinker {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes pausedx {
+  0% {
+    opacity: 0;
+  }
+    25%, 100% {
+    opacity: 1;
+  }
+}
+
+@keyframes gradient {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
+@keyframes expand {
+	0% {
+width: 0px;
+overflow:hidden;
+text-indent: -999em;
+	}
+	50% {
+width: 70px;
+	}
+	99% {
+width: 140px;
+	}
+		100% {
+width: auto;
+overflow:unset;
+text-indent: unset;
+	}
+}
+
+
+.gal-toast.blinker{
+animation: blinker 0.5s linear 3; /* 1 second per blink, repeats 3 times */
+}
+
+.gal-toast.paused{
+animation: pausedx 2s linear infinite;
+}
+
+.gal-toast.expand .gal-toast-text{
+animation: expand 0.4s linear 1;
+}
+
+.red .gal-toast-text{background-image:linear-gradient(to bottom left, #e14001, #9C2C01);}
+.green .gal-toast-text{background-image:linear-gradient(to bottom left, #369500, #9ECC00);}
+.brown .gal-toast-text{background-image:linear-gradient(to bottom left, #5e3700, #a86000);}
+.gold .gal-toast-text{background-image:linear-gradient(to bottom left, #806D00, #CCAD00);}
+.teal .gal-toast-text{background-image: linear-gradient(to bottom left, #006659, #00ceb1);}
+.blue .gal-toast-text{background-image: linear-gradient(to bottom left, #0F4779, #1A7CD2);}
+.purple .gal-toast-text{background-image: linear-gradient(to bottom left, #3b0082, #9d4bff);}
+.rosy .gal-toast-text{background-image: linear-gradient(to bottom left, #b5015c, #ff0083);}
+
+.gradient .gal-toast-text{
+background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+background-size: 400% 400%;
+animation: gradient 2s ease infinite;
+}
+
 .album-nav{
 display: block;
 width: 14px;
@@ -186,7 +263,7 @@ background-color:#ffefc9;
 background-color:#d8ffbc;
 }
 
-#album-info, #search-info{
+#album-info, #search-info, .album-empty-state{
 box-sizing: border-box;
 border: 1px solid gray;
 margin: 40px 45px 0 45px;
@@ -195,16 +272,18 @@ background-color: rgb(255,255,255);
 color:#333;
 }
 
-#album-info > h2, #search-info > h2{
+#album-info > h2, #search-info > h2, .album-empty-state > h2, .deepshow h2{
 padding: 0 0 10px 0;
 margin: 0;
 font-family: arial;
 font-weight:normal;
 }
 
-#search-info > h2 > b{
+#search-info > h2 > b, .deepshow h2 > b{
 color:red;
 }
+
+.deepshow{line-height: 1.5;}
 
 .album-descr:empty:before{content:'No description availiable.';}
 
@@ -560,12 +639,27 @@ font-size:12px !important;
 @media only screen and (max-width: 509px) {
 .album-box{width:50%}
 .album-note-ctr{width:100%}
+
+
 }
 
 @media only screen and (max-width: 339px) {
 .album-box{width:100%}
 .album-note-ctr{width:100%}
 .album-bar > span{left:50px;font:bold 16px/49px arial;}
+
+/* for wristphone */
+.album-buttons{margin: 0 30px 0 0 !important}
+.gal-mobile-controls{right: 30px !important}
+.gal-toolbar{right: 30px !important}
+.gal-share-ctr{bottom: 30px !important}
+.album-bar > span{display:none !important}
+.albtn-menu{left: 30px !important}
+.phpl-alert-box-top-close{margin-right:30px;}
+.phpl-alert-box-bottom {padding: 10px 40px 10px 10px !important;}
+.gal-counter, .gal-load-text{left: 30px !important}
+.ximghvr .album-info b[xurl] {padding: 15px 20px !important;}
+.gal-stats-ctr {padding-top: 30px !important;}
 }
 
 

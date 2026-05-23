@@ -30,7 +30,7 @@ function deleteAllZipFiles($directory, $slug) {
     echo "All ZIP files have been deleted.";
 }
 
-$allowed = array("fhd", "hd", "qhd", "thumb");
+$allowed = array("full", "2k", "fhd", "hd", "thumb", "ai");
 if(isset($_GET['dir'])){
 if(in_array($_GET['dir'], $allowed)){
 $dir = $_GET['dir'];
@@ -88,9 +88,12 @@ if ($zip->open($zipfile, ZipArchive::CREATE) === TRUE) {
                 }
 
                 $ldata = explode(' ||| ', $line);
-                $filePath = $dir . '/' . $ldata[0];
+                $selection = phpix_backup_media_selection($dir, $ldata[0]);
 
-                if (file_exists($filePath)) {
+                if ($selection !== false && file_exists($selection['disk_path'])) {
+                    $filePath = $selection['disk_path'];
+                    $archiveDir = trim(str_replace('\\', '/', dirname($ldata[1])), '/');
+                    $archivePath = ($archiveDir != '' && $archiveDir != '.') ? $archiveDir . '/' . $selection['archive_filename'] : $selection['archive_filename'];
                     $fileSize = filesize($filePath);
 
                     // Check if adding this file will exceed the maximum size
@@ -98,11 +101,15 @@ if ($zip->open($zipfile, ZipArchive::CREATE) === TRUE) {
                         break; // Stop adding files if the maximum size is reached
                     }
 
-                    $zip->addFile($filePath, $ldata[1]);
+                    $zip->addFile($filePath, $archivePath);
                     $_SESSION['currentSize'] += $fileSize;
                     $_SESSION['processedLines'][] = $line; // Store the processed line
                 } else {
-                    echo $ldata[0] . ' was not found.<br>';
+                    if ($dir == 'ai') {
+                        $_SESSION['processedLines'][] = $line;
+                        continue;
+                    }
+                    echo $ldata[0] . ' was not found for backup quality ' . $dir . '.<br>';
                 }
             }
         }
@@ -149,7 +156,7 @@ die();
 
 
 
-sadmin_title('Backup <small>'.$al['title'].'</small>'); 
+sadmin_title('<i class="fa fa-cloud-download text-success"></i> Backup <small>'.$al['title'].'</small>'); 
 
 function sanitizeString($input) {
     // Use a regular expression to allow only letters, numbers, hyphens, and underscores
@@ -287,11 +294,12 @@ $bkstats = '<br /><h4>Backup found !</h4><ul><li>Total backup size : '.xsize($tb
 </table>';
 } else {
 $btn = 'Choose image quality for backup<div class="btn-group pull-right">
-<a class="btn btn-primary" href="'.$domain.'phpix-manage.php?page=operations&method=generate&dir=fhd&albumid='.$aid.'">Full HD</a>
-<a class="btn btn-info" href="'.$domain.'phpix-manage.php?page=operations&method=generate&dir=hd&albumid='.$aid.'">HD</a>
-<a class="btn btn-warning" href="'.$domain.'phpix-manage.php?page=operations&method=generate&dir=qhd&albumid='.$aid.'">QHD</a>
-<a class="btn btn-default" href="'.$domain.'phpix-manage.php?page=operations&method=generate&dir=thumb&albumid='.$aid.'">Thumb</a>
-<a class="btn btn-success" href="'.$domain.'phpix-manage.php?page=backup&aid='.$aid.'&make=yes">Original</a>
+<a class="btn btn-sm btn-default" href="'.$domain.'phpix-manage.php?page=backup&aid='.$aid.'&make=yes&dir=ai">AI</a>
+<a class="btn btn-sm btn-primary" href="'.$domain.'phpix-manage.php?page=backup&aid='.$aid.'&make=yes&dir=2k">2K</a>
+<a class="btn btn-sm btn-info" href="'.$domain.'phpix-manage.php?page=backup&aid='.$aid.'&make=yes&dir=fhd">Full HD</a>
+<a class="btn btn-sm btn-warning" href="'.$domain.'phpix-manage.php?page=backup&aid='.$aid.'&make=yes&dir=hd">HD</a>
+<a class="btn btn-sm btn-default" href="'.$domain.'phpix-manage.php?page=operations&method=generate&dir=thumb&albumid='.$aid.'">Thumb</a>
+<a class="btn btn-sm btn-success" href="'.$domain.'phpix-manage.php?page=backup&aid='.$aid.'&make=yes&dir=full">Original</a>
 </div>';
 $bkstats = '';
 }

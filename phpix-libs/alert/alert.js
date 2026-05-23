@@ -38,10 +38,10 @@ function phpl_alert(data, title = 'Message from server', footer = '<div class="p
     `;
 
     // Insert the alert into the DOM
-        $('body').prepend(xhtml);
+        $('#flscrn').prepend(xhtml);
 
     // Apply visual effects to background
-    $('#flscrn').addClass('blurred');
+    $('#flscrn-inner, .flscrn-inner, #mlib-lightbox').addClass('blurred');
     $('#' + xtot).fadeIn("slow");
 
     // Return the alert ID for reference
@@ -92,8 +92,11 @@ function phpl_close_alert(xid) {
 
     // Fade out and remove the alert
     $('#' + xid).fadeOut("slow", function () {
+		var mtot = $('.phpl-alert-ctr').length;
         $(this).remove(); // Remove from DOM
-        $('#flscrn').removeClass('blurred'); // Remove blur effect
+		if(mtot==1){
+        $('.blurred').removeClass('blurred'); // Remove blur effect
+		}
     });
 }
 

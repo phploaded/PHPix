@@ -53,8 +53,8 @@ mlib_upload_resolution = '<?php echo $mlib_upload_resolution; ?>';
 </head>
 
 <body>
-
-<div id="wrapper">
+<div id="flscrn"></div>
+<div class="flscrn-inner" id="wrapper">
 <?php 
 if(!isset($_SESSION['PHPix'])){$_SESSION['PHPix']='';} 
 if($_SESSION['PHPix']!=''){
@@ -83,12 +83,13 @@ if($_SESSION['PHPix']!=''){
 <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-lg fa-plus"></i> More <span class="caret"></span></a>
           <ul class="dropdown-menu" role="menu">
-            <li><a href="<?php echo $admin_url ?>users"><i class="fa fa-fw fa-users"></i> Private Users</a></li>
-            <li><a href="<?php echo $admin_url ?>installer"><i class="fa fa-fw fa-download"></i> Package Installer</a></li>
+            <li><a href="<?php echo $admin_url ?>users"><i class="fa fa-fw fa-lg fa-users"></i> Private Users</a></li>
+            <li><a href="<?php echo $admin_url ?>installer"><i class="fa fa-fw fa-lg fa-windows"></i> Package Installer</a></li>
+            <li><a href="<?php echo $admin_url ?>backup&aid="><i class="fa fa-fw fa-lg fa-cloud-download"></i> Full Backup</a></li>
             <li class="divider"></li>
-            <li><a href="<?php echo $admin_url ?>options"><i class="fa fa-fw fa-gear"></i> Display Options</a></li>
+            <li><a href="<?php echo $admin_url ?>options"><i class="fa fa-fw fa-lg fa-gear"></i> Display Options</a></li>
             <li class="divider"></li>
-            <li title="Update <?php echo $website_name; ?> to latest version"><a href="<?php echo $admin_url ?>update"><i class="fa fa-fw fa-refresh"></i> System Updates</a></li>
+            <li title="Update <?php echo $website_name; ?> to latest version"><a href="<?php echo $admin_url ?>update"><i class="fa fa-fw fa-lg fa-refresh"></i> System Updates</a></li>
           </ul>
         </li>
 </ul>

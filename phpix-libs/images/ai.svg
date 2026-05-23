@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="mainGrad" x1="95" y1="115" x2="930" y2="910" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#26E6D6"/>
+      <stop offset="48%" stop-color="#2268E9"/>
+      <stop offset="100%" stop-color="#9B2BDE"/>
+    </linearGradient>
+
+    <linearGradient id="starGrad" x1="690" y1="75" x2="965" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#26E6D6"/>
+      <stop offset="50%" stop-color="#2268E9"/>
+      <stop offset="100%" stop-color="#9B2BDE"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Smooth open rounded frame with cleaner top-left corner -->
+  <path
+    d="M535 125
+       H268
+       C179 125 118 186 118 276
+       V775
+       C118 855 183 920 263 920
+       H780
+       C860 920 925 855 925 775
+       V627"
+    stroke="url(#mainGrad)"
+    stroke-width="58"
+    stroke-linecap="round"
+    stroke-linejoin="round"/>
+
+  <!-- AI -->
+  <text x="322" y="735"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="425"
+        font-weight="700"
+        fill="url(#mainGrad)">AI</text>
+
+  <!-- Sparkles -->
+  <path d="M775 150
+           C790 214 807 231 872 247
+           C807 263 790 280 775 345
+           C760 280 743 263 678 247
+           C743 231 760 214 775 150Z"
+        fill="url(#starGrad)"/>
+
+  <path d="M905 68
+           C912 105 921 114 958 122
+           C921 130 912 139 905 177
+           C898 139 889 130 852 122
+           C889 114 898 105 905 68Z"
+        fill="url(#starGrad)"/>
+
+  <path d="M905 246
+           C912 284 922 294 960 302
+           C922 310 912 320 905 358
+           C898 320 888 310 850 302
+           C888 294 898 284 905 246Z"
+        fill="url(#starGrad)"/>
+</svg>

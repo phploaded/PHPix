@@ -1,6 +1,6 @@
 </div><!-- /#page-wrapper -->
 </div><!-- /#wrapper -->
-<div style="padding:10px;" class="text-center">A product of <a href="http://phploaded.com/project/phpix.html" target="_blank" class="text-danger">phploaded.com</a></div>
+<div style="padding:10px;" class="text-center">A product of <a href="http://phploaded.com/project/phpix/" target="_blank" class="text-danger">phploaded.com</a></div>
 
 
 

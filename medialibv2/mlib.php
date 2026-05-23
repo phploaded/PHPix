@@ -66,14 +66,13 @@ imagedestroy($rotate);
 }
 
 @unlink('../full/' . $_POST['u']);
-@unlink('../thumb/' . $_POST['u']);
-@unlink('../qhd/' . $_POST['u']);
-@unlink('../hd/' . $_POST['u']);
-@unlink('../fhd/' . $_POST['u']);
+@unlink(phpix_thumb_disk_path($_POST['u']));
+@unlink(phpix_legacy_thumb_disk_path($_POST['u']));
+phpix_delete_generated_versions($_POST['u']);
 
-get_image_thumb($newfile, 'h=150');
+$thumb = get_image_thumb($newfile, 'h='.phpix_thumb_height());
 
-$sql = "UPDATE `".$prefix."uploads` SET `url`='$newfile', `thumb`='$newfile' WHERE `id`='".$_POST['id']."'";
+$sql = "UPDATE `".$prefix."uploads` SET `url`='$newfile', `thumb`='$thumb' WHERE `id`='".$_POST['id']."'";
 mysqli_query($con, $sql);
 
 echo $newfile;
@@ -162,6 +161,9 @@ $res = mysqli_query($mlib_db, $qry);
 
 while($row = mysqli_fetch_assoc($res)){
 $row['newtime'] = date("l, jS M Y, h:i:s a", $row['time']);
+if(in_array(strtolower($row['type']), $mlib_allowed_images, true)){
+$row['thumb'] = get_image_thumb($row['url'], 'h='.phpix_thumb_height());
+}
 
 $data[] = $row;
 ++$i;
@@ -213,7 +215,7 @@ $file_id = 'yt['.$video_id.']'.uniqid();
 	if (in_array($data['mime'], $mlib_allowed_images_mime)){
 
 		$file = pathinfo($url);
-		$thumb = get_image_thumb($data['fname'], 'h=150');
+		$thumb = get_image_thumb($data['fname'], 'h='.phpix_thumb_height());
 		$full_url = MLIBURL.'full/'.$data['fname'];
 		mysqli_query($mlib_db, "INSERT INTO `".MLIBPREFIX."uploads` (`id`, `type`, `title`, `folder`, `caption`, `url`, `thumb`, `time`, `uid`, `size`, `ctype`) 
 		VALUES ('".$file_id."', '".$data['ext']."', '".$data['title']."', '$folder', '".$data['title']."', '".$data['fname']."', '$thumb', '".time()."', '$mlib_current_user', '".$data['size']."', '".$ctype."')");
@@ -246,7 +248,7 @@ $file_id = 'yt['.$video_id.']'.uniqid();
 	$filename = $fid.".".$ext;
 	if(in_array($mime, $mlib_allowed_images_mime)){
 		if(file_from_data($url, $fid, $ext)){
-			$thumb = get_image_thumb($filename, 'h=150');
+			$thumb = get_image_thumb($filename, 'h='.phpix_thumb_height());
 			$size = filesize('../full/'.$filename);
 			mysqli_query($mlib_db, "INSERT INTO `".MLIBPREFIX."uploads` (`id`, `type`, `title`, `folder`, `caption`, `url`, `thumb`, `time`, `uid`, `size`) 
 			VALUES ('".$fid."', '".$ext."', 'phpix ".$fid."', '$folder', 'phpix ".$fid."', '".$filename."', '$thumb', '".time()."', '$mlib_current_user', '".$size."')");
@@ -271,23 +273,33 @@ echo '<br /><b>Processing is complete.</b><script>mlib_refresh();</script><br />
 }
 
 
-if($method=='mlib_delete_items'){
-$i=0;
-foreach($_POST['mlibid'] as $key => $val){
-$sql = "SELECT * FROM `".MLIBPREFIX."uploads` WHERE `id`='".$val."' AND `uid`='".$mlib_current_user."'";
-$data = mysqli_fetch_assoc(mysqli_query($mlib_db, $sql));
+if ($method == 'mlib_delete_items') {
+    $i = 0;
+    foreach ($_POST['mlibid'] as $key => $val) {
+        $sql = "SELECT * FROM `".MLIBPREFIX."uploads` WHERE `id`='".$val."' AND `uid`='".$mlib_current_user."'";
+        //error_log("Executing query: $sql"); // Log the query
+        $result = mysqli_query($mlib_db, $sql);
+        if (!$result) {
+            //error_log("Query failed: " . mysqli_error($mlib_db));
+            continue;
+        }
+        $data = mysqli_fetch_assoc($result);
+        if (!$data) {
+            //error_log("No data found for id: $val and uid: $mlib_current_user");
+            continue;
+        }
 
-/* delete full image and thumb */
-if($mlib_current_user==$data['uid']){
-mlib_delete_file(MLIBPATH.'full/'.$data['url']);
-mlib_delete_file(MLIBPATH.'thumb/'.$data['thumb']);
-mysqli_query($mlib_db, "DELETE FROM `".MLIBPREFIX."uploads` WHERE `id`='".$val."' AND `uid`='".$mlib_current_user."'");
-++$i;
-}
+        /* delete full image and thumb */
+        if ($mlib_current_user == $data['uid']) {
+            phpix_delete_media_bundle($data['url']);
+            mysqli_query($mlib_db, "DELETE FROM `".MLIBPREFIX."uploads` WHERE `id`='".$val."' AND `uid`='".$mlib_current_user."'");
+            ++$i;
+        }
+    }
+
+    echo $i.' Files were deleted';
 }
 
-echo $i.' Files were deleted from the seleted '.count($_POST['mlibid']).' files';
-}
 
 
 if($method=='mlib_create_import_method'){
@@ -324,10 +336,12 @@ $tags = format_tags($tagsx);
 mysqli_query($mlib_db, "UPDATE `".MLIBPREFIX."uploads` SET `title`='$title', `caption`='$caption', `tags`='$tags', `access`='$access' WHERE `id`='".$_POST['mlibid']."'");
 
 
-$zmails = $_POST['maillist']; 
+// Check if 'maillist' is set in $_POST and assign it, or use an empty array if not
+$zmails = isset($_POST['maillist']) ? $_POST['maillist'] : [];
+
 mysqli_query($con, "DELETE FROM `".$prefix."access` WHERE `type`='photo' AND `aid`='".$_POST['mlibid']."'");
 
-if(count($_POST['maillist'])>0){
+if(count($zmails)>0){
 foreach($zmails as $key => $val){
 mysqli_query($con, "INSERT INTO `".$prefix."access` (`id`, `uid`, `aid`, `type`) VALUES (NULL, '$val', '".$_POST['mlibid']."', 'photo')");
 }
@@ -338,7 +352,7 @@ $data['title']=$title;
 $data['access']=$access;
 $data['caption']=$caption;
 $data['tags']=$tags;
-$data['emails']=str_replace(',', ', ', $emails);
+//$data['emails']=str_replace(',', ', ', $emails);
 $json = json_encode($data);
 echo $json;
 }

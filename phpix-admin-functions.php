@@ -1,5 +1,7 @@
 <?php 
 
+require_once('phpix-media-functions.php');
+
 function admin_only(){
 global $phpix_user;
 if($phpix_user!=1){die('<h4 class="text-danger"><br />Admin leavel access needed. You are not authorised to access this area!</h4>');}
@@ -200,4 +202,48 @@ $out['checkboxes'] = $out['checkboxes'].'<li><input type="checkbox" name="'.$dir
 $out['checkboxes'] = '<li><input type="checkbox" data-chk="'.$dirname.'[]" onclick="toggle_all_checkboxes(this)"> Toggle all</li>'.$out['checkboxes'];
 
 return $out;
+}
+
+function sync_generated_dirs(){
+global $con, $prefix;
+
+$refresh_dashboard_cache = false;
+
+$dirs = array(
+"ai" => 0,
+"cover" => 1,
+"full" => 2,
+"2k" => 3,
+"fhd" => 4,
+"hd" => 5,
+"thumb" => 6
+);
+
+foreach($dirs as $dir => $sort){
+	if(!is_dir($dir)){
+		mkdir($dir);
+		$refresh_dashboard_cache = true;
+	}
+	if(!file_exists($dir.'/index.html')){
+		file_put_contents($dir.'/index.html', '');
+		$refresh_dashboard_cache = true;
+	}
+
+	$existing = mysqli_fetch_assoc(mysqli_query($con, "SELECT `id`, `sort` FROM `".$prefix."dirs` WHERE `id`='".$dir."' LIMIT 1"));
+	if(!$existing){
+		mysqli_query($con, "INSERT INTO `".$prefix."dirs` (`id`, `sort`, `time`, `files`, `size`) VALUES ('".$dir."', '".$sort."', '".time()."', '1', '0')");
+		$refresh_dashboard_cache = true;
+	} else {
+		if((int) $existing['sort'] !== (int) $sort){
+			mysqli_query($con, "UPDATE `".$prefix."dirs` SET `sort`='".$sort."' WHERE `id`='".$dir."'");
+			$refresh_dashboard_cache = true;
+		}
+	}
+}
+
+mysqli_query($con, "DELETE FROM `".$prefix."dirs` WHERE `id` NOT IN ('ai', 'cover', 'full', '2k', 'fhd', 'hd', 'thumb', 'temp')");
+
+if($refresh_dashboard_cache){
+	@unlink('cache/'.$_SERVER['HTTP_HOST'].'-index-'.date("Ym").'.html');
+}
 }

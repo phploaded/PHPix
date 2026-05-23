@@ -5,6 +5,7 @@ include('../phpix-config.php');
 
 /* This is a relative filepath where you have kept this file */
 define('MLIBPATH', str_replace('medialibv2', '', dirname(__FILE__)) );
+require_once(MLIBPATH.'phpix-media-functions.php');
 
 /* This is a relative URL where you have kept this file */
 define('MLIBURL', $domain);
@@ -71,18 +72,22 @@ return $text;
 
 
 function get_image_thumb($thumb, $query){
-$domain = MLIBURL;
-global $xthumb_secret;
-
-if(file_exists('../thumb/'.$thumb)){
-return $thumb;
-} else {
-$get_file1 = file_get_contents($domain.'xthumb-'.$xthumb_secret.'.php?src='.$domain.'full/'.$thumb.'&q=90&s=1&'.$query);
-$new_file1 = fopen('../thumb/'.$thumb, "w");
-fwrite($new_file1, $get_file1);
-fclose($new_file1);
-return $thumb;
+$thumb = phpix_normalize_media_file($thumb);
+if($thumb == ''){
+return '';
 }
+
+$target_height = phpix_thumb_height();
+if(is_string($query) && trim($query) != ''){
+$query_args = array();
+parse_str(str_replace('&amp;', '&', $query), $query_args);
+if(isset($query_args['h']) && (int) $query_args['h'] > 0){
+$target_height = (int) $query_args['h'];
+}
+}
+
+phpix_prepare_thumb_file($thumb, 90, $target_height);
+return phpix_thumb_filename($thumb);
 
 }
 

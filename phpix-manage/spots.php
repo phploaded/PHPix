@@ -40,7 +40,7 @@ if (isset($_POST['edit'])) {
     }
 }
 ?>
-<div class="page-header"><h2><i class="fa fa-tags"></i> Manage Spots</h2></div>
+<div class="page-header"><h2><i class="fa fa-tags text-info"></i> Manage Spots</h2></div>
         <table id="spots-table" class="table table-striped table-bordered">
             <thead>
                 <tr>
@@ -56,14 +56,14 @@ if (isset($_POST['edit'])) {
                 $qry = "SELECT * FROM `".$prefix."spots`";
                 $result = mysqli_query($con, $qry);
                 while ($row = mysqli_fetch_assoc($result)) {
-                    echo "<tr>
+                    echo "<tr id=\"sid-{$row['id']}\">
                         <td>{$row['id']}</td>
                         <td>{$row['uid']}</td>
                         <td>{$row['sort']}</td>
-                        <td>{$row['title']}</td>
+                        <td class=\"admin-spot-title\">{$row['title']}</td>
                         <td>
                             <a href='javascript:void(0)' class='btn btn-warning btn-sm' onclick='editRow({$row['id']}, \"{$row['title']}\", {$row['sort']})'>Edit</a>
-                            <a href='phpix-manage.php?page=spots&delete={$row['id']}' class='btn btn-danger btn-sm' onclick='return confirm(\"Are you sure you want to delete this row?\")'>Delete</a>
+                            <a onclick=\"admin_delete_spot(this)\" class='btn btn-danger btn-sm' href=\"javascript:void(0)\">Delete</a>
                         </td>
                     </tr>";
                 }

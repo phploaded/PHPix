@@ -33,7 +33,7 @@ $caption = $title;
 //$url = $targetFile;
 
 if(in_array($ext, $mlib_allowed_images)){
-$thumb = get_image_thumb($newfilename, 'h=150');
+$thumb = get_image_thumb($newfilename, 'h='.phpix_thumb_height());
 mysqli_query($mlib_db, "INSERT INTO `".MLIBPREFIX."uploads` (`id`, `type`, `title`, `folder`, `caption`, `url`, `thumb`, `time`, `uid`, `size`) 
 VALUES ('$id', '$ext', '$title', '$folder', '$caption', '$newfilename', '$thumb', '".time()."', '$userid', '$size')");
 } else {

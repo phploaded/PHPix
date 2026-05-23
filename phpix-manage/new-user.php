@@ -86,6 +86,7 @@ echo $notify['newuser']; ?>
     <div class="form-group">
       <div class="col-lg-10 col-lg-offset-2">
         <button type="submit" class="btn btn-primary">Create User</button>
+		<a href="<?php echo $admin_url; ?>users" class="btn btn-warning">View Users</a>
       </div>
     </div>
 	</div>

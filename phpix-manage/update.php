@@ -3,7 +3,7 @@
 include('phpix-info.php');
 //$software_version = '1.81';
  ?>
-<div class="page-header" id="banner"><h2><i class="fa fa-refresh"></i> System Updates</h2></div>
+<div class="page-header" id="banner"><h2><i class="fa fa-refresh text-success"></i> System Updates</h2></div>
 
 <div class="well">You are currently running <b>PHPix <?php echo $software_version; ?></b> released on <i><?php echo xdate($software_updated); ?></i></div>
 

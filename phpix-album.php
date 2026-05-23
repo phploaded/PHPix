@@ -2,8 +2,10 @@
 
 include('phpix-config.php');
 include('phpix-front-functions.php');
-if($_SESSION['PHPix']!=''){ $phpix_user = 1; } 
-elseif($_SESSION['phpixuser']!=''){ $phpix_user = $_SESSION['phpixuser']; } 
+$admin_session = isset($_SESSION['PHPix']) ? $_SESSION['PHPix'] : '';
+$user_session = isset($_SESSION['phpixuser']) ? $_SESSION['phpixuser'] : '';
+if($admin_session!=''){ $phpix_user = 1; } 
+elseif($user_session!=''){ $phpix_user = $user_session; } 
 else{$phpix_user ='';}
 ?><!DOCTYPE html>
 <html>
@@ -49,7 +51,8 @@ echo'<li><a href="'.$admin_url.'albums">Manage your albums</a></li>
 <a onclick="album_toggle_sidebar()" class="albtn-menu"></a>
 <span>Public albums</span>
 <ul class="album-buttons">
-<li onclick="toggleFullscreen('#flscrn');" class="albtn-fullscreen"></li>
+<li class="albtn-deepshow gal-play"></li>
+<li onclick="toggleFullscreen('#flscrn')" class="albtn-fullscreen"></li>
 </ul>
 </div>
 </div>
@@ -84,10 +87,12 @@ gal_display_albums();
 
 $count = mysqli_fetch_assoc(mysqli_query($con, "SELECT COUNT(*) as total FROM `".$prefix."content` WHERE `type`='note' AND `status`='Enabled'"));
 
-$spot_data = mysqli_query($con, "SELECT `title` FROM `".$prefix."spots` ORDER BY `title` ASC");
+$spot_data = mysqli_query($con, "SELECT `title`, `sort` FROM `".$prefix."spots` ORDER BY `sort` DESC");
 $spots = array();
+$spotsSort = array();
 while($row = mysqli_fetch_assoc($spot_data)){
 $spots[] = $row['title'];
+$spotsSort[] = $row['sort'];
 }
 
 if(!isset($_GET['pagenumber'])){$_GET['pagenumber']='';} 
@@ -112,6 +117,7 @@ $(function() {
 });
 
 var spotsArray = ' . json_encode($spots) . ';
+var spotsSort = ' . json_encode($spotsSort) . ';
 </script>';
 
  ?>
